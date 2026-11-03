@@ -38,3 +38,11 @@ npm run lint    # run oxlint
 ```
 
 Copy `.env.example` to `.env` for any server-side keys. Never expose them to the browser.
+
+## Deployment
+
+The `lantrip/cary-explorer` fork deploys to https://cary.lant.rip behind Keycloak.
+Run `scripts/sync-upstream.sh` to merge upstream changes, push `dev`, then run
+`scripts/release.sh vX.Y.Z` to publish a release. GitHub Actions builds a private
+GHCR image; Flux updates k3s. See [the deployment runbook](docs/deployment.md) for
+setup, access, monitoring, validation, and rollback.

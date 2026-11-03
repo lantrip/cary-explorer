@@ -1,0 +1,93 @@
+name: Check and release
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev]
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: scripts/check.sh
+      - run: bash tests/release-scripts.sh
+
+  publish:
+    needs: check
+    if: github.repository == 'lantrip/cary-explorer' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: publish-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate release tag and ancestry
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          git fetch --no-tags origin dev
+          git merge-base --is-ancestor HEAD origin/dev
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Refuse to replace an existing image tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          endpoint=users/lantrip/packages/container/cary-explorer
+          if gh api "$endpoint" > package-metadata.json 2> package-error; then
+            jq -e '.visibility == "private"' package-metadata.json
+            gh api --paginate "$endpoint/versions?per_page=100" --jq '.[].metadata.container.tags[]' > published-tags
+            if grep -Fxq "$RELEASE_TAG" published-tags; then
+              echo 'Image tag already exists; publish a new version.' >&2
+              exit 1
+            fi
+          elif ! grep -q 'HTTP 404' package-error; then
+            cat package-error >&2
+            exit 1
+          fi
+      - name: Build release image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: ghcr.io/lantrip/cary-explorer:${{ github.ref_name }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/lantrip/cary-explorer
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke test and publish the tested image
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          image="ghcr.io/lantrip/cary-explorer:$RELEASE_TAG"
+          scripts/smoke-container.sh "$image"
+          docker push "$image"
+          gh api users/lantrip/packages/container/cary-explorer --jq '.visibility' | grep -Fx private
