@@ -78,7 +78,7 @@ the shared image automation are reused. The Service is ClusterIP only.
 
 Envoy protects the entire hostname, including `/data/` and `/assets/`, with the
 `cary-explorer` Keycloak realm. Administrators create enabled users in that realm
-at https://keycloak.lant.rip; self-registration and email password resets are off.
+at https://admin.lant.rip; self-registration and email password resets are off.
 Assign a temporary initial password and require the user to change it on login.
 Accounts in other realms do not automatically gain access.
 
