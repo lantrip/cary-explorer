@@ -43,10 +43,19 @@ If a tag push fails, the local tag remains; inspect the remote before retrying t
 printed push command. Never retag a published version.
 
 The workflow validates that the tagged commit belongs to `dev`, checks the app,
-builds linux/amd64, and smoke-tests the exact image before pushing it. GitHub
-packages are private on first publication; the workflow verifies visibility and
-refuses to publish into an existing public package. Keep the package connected to
-this repository so its `GITHUB_TOKEN` can publish.
+builds linux/amd64, and smoke-tests the exact image before pushing it. The workflow
+requires an existing private package before publishing and checks its visibility
+again afterward. Keep the package connected to this repository so its
+`GITHUB_TOKEN` can publish. Base images are pinned by digest; update those pins
+deliberately as part of a new release.
+
+The package was bootstrapped with owner credentials. For a replacement registry
+namespace, first push a tested image with the owner's `write:packages` credential
+and the `org.opencontainers.image.source` label pointing to this repository; then
+verify private visibility and Actions access before using tagged releases. Do not
+assume a first push from a public fork will create a private package. A public
+package cannot be converted back to private; replacing an accidentally public
+package requires preserving its image and recreating the package.
 
 ```sh
 gh run list --repo lantrip/cary-explorer --limit 5

@@ -58,15 +58,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           endpoint=users/lantrip/packages/container/cary-explorer
-          if gh api "$endpoint" > package-metadata.json 2> package-error; then
-            jq -e '.visibility == "private"' package-metadata.json
-            gh api --paginate "$endpoint/versions?per_page=100" --jq '.[].metadata.container.tags[]' > published-tags
-            if grep -Fxq "$RELEASE_TAG" published-tags; then
-              echo 'Image tag already exists; publish a new version.' >&2
-              exit 1
-            fi
-          elif ! grep -q 'HTTP 404' package-error; then
-            cat package-error >&2
+          # Bootstrap the package privately once with owner credentials. Never
+          # rely on first-push visibility defaults from a public fork's workflow.
+          gh api "$endpoint" > package-metadata.json
+          jq -e '.visibility == "private"' package-metadata.json
+          gh api --paginate "$endpoint/versions?per_page=100" --jq '.[].metadata.container.tags[]' > published-tags
+          if grep -Fxq "$RELEASE_TAG" published-tags; then
+            echo 'Image tag already exists; publish a new version.' >&2
             exit 1
           fi
       - name: Build release image
