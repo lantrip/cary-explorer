@@ -1,0 +1,23 @@
+{
+  "sourceId": "parks-and-recreation-feature-map",
+  "url": "https://data.townofcary.org/explore/dataset/parks-and-recreation-feature-map/",
+  "licence": "CC0-1.0",
+  "licenceStatus": "open",
+  "attribution": "Town of Cary Open Data (CC0 1.0)",
+  "retrievedAt": "2026-11-07T17:40:43.353Z",
+  "sourceModified": "2026-10-31T23:01:30+00:00",
+  "recordCount": 36,
+  "expectedCount": 36,
+  "fields": [
+    "parkurl",
+    "parkarea",
+    "restroom",
+    "playground",
+    "soccer",
+    "skatepark",
+    "naturetrail",
+    "lake",
+    "dogpark",
+    "discgolf"
+  ]
+}

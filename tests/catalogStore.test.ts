@@ -30,7 +30,7 @@ interface Pending {
 // A loader whose calls stay pending until the test settles them.
 function fakeLoader() {
   const calls: Pending[] = []
-  const loader: CatalogLoader = (_url, signal) =>
+  const loader: CatalogLoader = (signal) =>
     new Promise<Catalog>((resolve, reject) => {
       calls.push({ signal, resolve, reject })
     })
@@ -162,5 +162,79 @@ describe('catalog store', () => {
     expect(store.getSnapshot()).toBe(ready)
     expect(store.getSnapshot().places).toBe(ready.places)
     unsubscribe()
+  })
+
+  describe('refresh keeps the last data', () => {
+    async function readyStore() {
+      const { loader, calls } = fakeLoader()
+      const store = createCatalogStore(loader)
+      const unsubscribe = store.subscribe(() => {})
+      store.ensureLoaded()
+      calls[0].resolve(catalog())
+      await flush()
+      return { store, calls, unsubscribe, loader }
+    }
+
+    it('keeps the same arrays while a refresh is loading', async () => {
+      const { store, calls, unsubscribe, loader } = await readyStore()
+      const { places, sources } = store.getSnapshot()
+      store.refresh()
+      expect(loader).toHaveBeenCalledTimes(2)
+      expect(store.getSnapshot().status).toBe('loading')
+      expect(store.getSnapshot().places).toBe(places)
+      expect(store.getSnapshot().sources).toBe(sources)
+      calls[1].resolve(catalog())
+      await flush()
+      unsubscribe()
+    })
+
+    it('keeps old data and reports the error when a refresh fails, and retry keeps it too', async () => {
+      const { store, calls, unsubscribe } = await readyStore()
+      const { places, sources } = store.getSnapshot()
+      store.refresh()
+      calls[1].reject(new Error('Catalog request failed (500).'))
+      await flush()
+      expect(store.getSnapshot()).toMatchObject({
+        status: 'error',
+        error: 'Catalog request failed (500).',
+      })
+      expect(store.getSnapshot().places).toBe(places)
+      expect(store.getSnapshot().sources).toBe(sources)
+
+      store.retry()
+      expect(store.getSnapshot().status).toBe('loading')
+      expect(store.getSnapshot().places).toBe(places)
+      calls[2].resolve(catalog())
+      await flush()
+      expect(store.getSnapshot().status).toBe('ready')
+      unsubscribe()
+    })
+
+    it('swaps to the new arrays when a refresh succeeds', async () => {
+      const { store, calls, unsubscribe } = await readyStore()
+      const { places, sources } = store.getSnapshot()
+      store.refresh()
+      const next = { places: [place('c')], sources: [] }
+      calls[1].resolve(next)
+      await flush()
+      expect(store.getSnapshot().status).toBe('ready')
+      expect(store.getSnapshot().places).toBe(next.places)
+      expect(store.getSnapshot().places).not.toBe(places)
+      expect(store.getSnapshot().sources).toBe(next.sources)
+      expect(store.getSnapshot().sources).not.toBe(sources)
+      unsubscribe()
+    })
+
+    it('refresh is a no-op unless ready, and a cancelled refresh restores the ready data', async () => {
+      const { store, calls, unsubscribe, loader } = await readyStore()
+      const ready = store.getSnapshot()
+      store.refresh()
+      store.refresh() // already loading
+      expect(loader).toHaveBeenCalledTimes(2)
+      unsubscribe() // last subscriber leaves mid-refresh
+      expect(calls[1].signal.aborted).toBe(true)
+      expect(store.getSnapshot().status).toBe('ready')
+      expect(store.getSnapshot().places).toBe(ready.places)
+    })
   })
 })

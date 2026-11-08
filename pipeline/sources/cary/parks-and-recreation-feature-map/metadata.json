@@ -1,0 +1,193 @@
+{
+  "visibility": "domain",
+  "fields": [
+    {
+      "name": "parkarea",
+      "description": null,
+      "annotations": {},
+      "label": "Size of Park",
+      "type": "double"
+    },
+    {
+      "name": "parkurl",
+      "description": null,
+      "annotations": {},
+      "label": "Website",
+      "type": "text"
+    },
+    {
+      "name": "restroom",
+      "description": null,
+      "annotations": {
+        "facet": true
+      },
+      "label": "Restrooms Available",
+      "type": "text"
+    },
+    {
+      "name": "playground",
+      "description": null,
+      "annotations": {
+        "facet": true
+      },
+      "label": "Playgrounds Available",
+      "type": "text"
+    },
+    {
+      "name": "soccer",
+      "description": null,
+      "annotations": {
+        "facet": true
+      },
+      "label": "Soccer Fields Available",
+      "type": "text"
+    },
+    {
+      "name": "skatepark",
+      "description": null,
+      "annotations": {
+        "facet": true
+      },
+      "label": "Skate Park",
+      "type": "text"
+    },
+    {
+      "name": "naturetrail",
+      "description": null,
+      "annotations": {
+        "facet": true
+      },
+      "label": "Nature Trails Available",
+      "type": "text"
+    },
+    {
+      "name": "lake",
+      "description": null,
+      "annotations": {
+        "facet": true
+      },
+      "label": "Lake",
+      "type": "text"
+    },
+    {
+      "name": "dogpark",
+      "description": null,
+      "annotations": {
+        "facet": true
+      },
+      "label": "Dog Park Available",
+      "type": "text"
+    },
+    {
+      "name": "discgolf",
+      "description": null,
+      "annotations": {
+        "facet": true
+      },
+      "label": "Disk Golf Course Available",
+      "type": "text"
+    },
+    {
+      "name": "geo_shape",
+      "description": null,
+      "annotations": {},
+      "label": "Geo Shape",
+      "type": "geo_shape"
+    },
+    {
+      "name": "geo_point_2d",
+      "description": null,
+      "annotations": {},
+      "label": "geo_point_2d",
+      "type": "geo_point_2d"
+    }
+  ],
+  "dataset_id": "parks-and-recreation-feature-map",
+  "dataset_uid": "da_x5hxhi",
+  "has_records": true,
+  "features": [
+    "geo",
+    "analyze"
+  ],
+  "attachments": [],
+  "alternative_exports": [],
+  "data_visible": true,
+  "metas": {
+    "default": {
+      "title": "Parks and Recreation Feature Map (Points)",
+      "description": "<p>This dataset contains information on Cary's more than 30 <a href=\"https://www.townofcary.org/recreation-enjoyment/parks-greenways-environment/parks\" target=\"_blank\"><u>public parks and natural areas</u></a>.</p>\n\n<p>This dataset is updated as new parks or natural areas are built.</p>",
+      "theme": [
+        "Sports, Leisure"
+      ],
+      "keyword": [
+        "Parks and Recreation",
+        "Park Features"
+      ],
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "language": "en",
+      "modified": "2026-10-31T23:01:30+00:00",
+      "publisher": "Cary",
+      "references": "https://maps.townofcary.org/arcgis/rest/services/ParksRec/Parks/FeatureServer/0",
+      "attributions": null,
+      "update_frequency": null,
+      "bbox": {
+        "type": "Feature",
+        "geometry": {
+          "coordinates": [
+            [
+              [
+                -78.75305134803057,
+                35.82277910783887
+              ],
+              [
+                -78.92601518891752,
+                35.82277910783887
+              ],
+              [
+                -78.92601518891752,
+                35.66955297254026
+              ],
+              [
+                -78.75305134803057,
+                35.66955297254026
+              ],
+              [
+                -78.75305134803057,
+                35.82277910783887
+              ]
+            ]
+          ],
+          "type": "Polygon"
+        },
+        "properties": {}
+      },
+      "data_processed": "2026-10-31T23:01:30+00:00",
+      "federated": false,
+      "geographic_reference": [
+        "us_80_3710740"
+      ],
+      "geographic_reference_auto": true,
+      "geometry_types": [
+        "Point"
+      ],
+      "metadata_languages": [
+        "en"
+      ],
+      "metadata_processed": "2026-10-31T23:01:30.446000+00:00",
+      "modified_updates_on_data_change": true,
+      "modified_updates_on_metadata_change": true,
+      "parent_domain": null,
+      "records_count": 36,
+      "shared_catalog": null,
+      "source_dataset": null,
+      "source_domain": null,
+      "source_domain_address": null,
+      "source_domain_title": null,
+      "territory": [
+        "Cary"
+      ],
+      "timezone": "US/Eastern"
+    }
+  }
+}

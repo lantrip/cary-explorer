@@ -1,0 +1,80 @@
+{
+ "version": "a869d3fd643dc57d",
+ "generatedFrom": "2026-11-08T06:53:56.840Z",
+ "artifacts": {
+  "catalog": "catalog.804ca278d9fb.json",
+  "relationships": "relationships.e268eccfdd5c.json",
+  "layers": {
+   "greenways": "layers/greenways.87e56a2d9f7f.geojson",
+   "parks": "layers/parks.4aee84a0f2c8.geojson",
+   "water": "layers/water.d6323db0f4b2.geojson"
+  },
+  "places": "places/306b5eee8617/",
+  "collections": "collections.29bdbc829600.json"
+ },
+ "sources": [
+  {
+   "id": "cary-greenways",
+   "recordCount": 46,
+   "retrievedAt": "2026-11-07T17:40:42.606Z",
+   "licence": "CC0 1.0",
+   "licenceStatus": "declared",
+   "lastSuccess": "2026-11-07T17:40:42.606Z",
+   "ok": true
+  },
+  {
+   "id": "cary-park-features",
+   "recordCount": 0,
+   "retrievedAt": "2026-11-07T17:40:43.353Z",
+   "licence": "CC0 1.0",
+   "licenceStatus": "declared",
+   "lastSuccess": "2026-11-07T17:40:43.353Z",
+   "ok": true
+  },
+  {
+   "id": "cary-parks",
+   "recordCount": 74,
+   "retrievedAt": "2026-11-07T17:40:39.429Z",
+   "licence": "CC0 1.0",
+   "licenceStatus": "declared",
+   "lastSuccess": "2026-11-07T17:40:39.429Z",
+   "ok": true
+  },
+  {
+   "id": "usgs-wbd-huc12",
+   "recordCount": 57,
+   "retrievedAt": "2026-11-08T06:53:56.840Z",
+   "licence": "Public domain (USGS)",
+   "licenceStatus": "declared",
+   "lastSuccess": "2026-11-08T06:53:56.840Z",
+   "ok": true
+  },
+  {
+   "id": "wake-greenways",
+   "recordCount": 73,
+   "retrievedAt": "2026-11-07T21:09:55.268Z",
+   "licence": "CC BY 4.0",
+   "licenceStatus": "declared",
+   "lastSuccess": "2026-11-07T21:09:55.268Z",
+   "ok": true
+  },
+  {
+   "id": "wake-park-entrances",
+   "recordCount": 0,
+   "retrievedAt": "2026-11-07T17:40:09.979Z",
+   "licence": "CC BY 4.0",
+   "licenceStatus": "declared",
+   "lastSuccess": "2026-11-07T17:40:09.979Z",
+   "ok": true
+  },
+  {
+   "id": "wake-parks",
+   "recordCount": 243,
+   "retrievedAt": "2026-11-07T17:40:46.521Z",
+   "licence": "CC BY 4.0",
+   "licenceStatus": "declared",
+   "lastSuccess": "2026-11-07T17:40:46.521Z",
+   "ok": true
+  }
+ ]
+}

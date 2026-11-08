@@ -17,9 +17,12 @@ curl -fsS -D "$work/headers" "$base/" >"$work/index"
 grep -qi 'cache-control: private, no-cache' "$work/headers"
 curl -fsS "$base/explore/parks" >"$work/fallback"
 cmp "$work/index" "$work/fallback"
-curl -fsS -D "$work/headers" "$base/data/catalog.json" >"$work/catalog"
+curl -fsS -D "$work/headers" "$base/data/manifest.json" >"$work/manifest"
 grep -qi 'content-type: application/json' "$work/headers"
 grep -qi 'cache-control: private, no-cache' "$work/headers"
+catalog=$(node --input-type=module -e 'import fs from "node:fs"; const m=JSON.parse(fs.readFileSync(process.argv[1])); const c=m.artifacts?.catalog; if(typeof c!=="string"||!/^[\w.-]+\.json$/.test(c)) process.exit(1); console.log(c)' "$work/manifest")
+curl -fsS -D "$work/headers" "$base/data/$catalog" >"$work/catalog"
+grep -qi 'content-type: application/json' "$work/headers"
 node --input-type=module -e 'import fs from "node:fs"; const c=JSON.parse(fs.readFileSync(process.argv[1])); if(!Array.isArray(c.places)||!Array.isArray(c.sources)) process.exit(1)' "$work/catalog"
 asset=$(sed -nE 's/.*src="(\/assets\/[^\"]+\.js)".*/\1/p' "$work/index" | head -1)
 [ -n "$asset" ]

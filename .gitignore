@@ -31,3 +31,11 @@ dist-ssr
 # Local reference material (not part of the app)
 cary-explorer-reference/
 cary-explorer-reference.zip
+
+# eBird API output: kept local until the API terms are confirmed (#5)
+pipeline/sources/ebird/*
+!pipeline/sources/ebird/README.md
+
+# Data pipeline working files
+pipeline/.staging/
+pipeline/.last-run.json

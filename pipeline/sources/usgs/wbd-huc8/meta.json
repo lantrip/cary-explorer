@@ -1,0 +1,18 @@
+{
+  "sourceId": "usgs-wbd-huc8",
+  "url": "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/4",
+  "licence": "Public domain (USGS: 'None. All data are open and non-proprietary')",
+  "licenceStatus": "open",
+  "attribution": "US Geological Survey, Watershed Boundary Dataset (public domain)",
+  "retrievedAt": "2026-11-08T06:53:59.048Z",
+  "sourceModified": null,
+  "recordCount": 7,
+  "expectedCount": 7,
+  "fields": [
+    "huc8",
+    "name",
+    "areasqkm",
+    "states",
+    "loaddate"
+  ]
+}

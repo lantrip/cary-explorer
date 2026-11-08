@@ -1,6 +1,8 @@
 // Framework-free store that loads the catalog once and shares the same arrays with every consumer.
 import type { Place, Source } from '../../types/place'
-import { CATALOG_URL, loadCatalog, type Catalog } from './catalog'
+import { loadCatalog, type Catalog } from './catalog'
+import { getRelease } from './release'
+import { loadLocalHotspots, hotspotsToCatalog } from './localHotspots'
 
 export type CatalogStatus = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -11,15 +13,17 @@ export interface CatalogState {
   error?: string
 }
 
-export type CatalogLoader = (url: string, signal: AbortSignal) => Promise<Catalog>
+export type CatalogLoader = (signal: AbortSignal) => Promise<Catalog>
 
 export interface CatalogStore {
   subscribe: (listener: () => void) => () => void
   getSnapshot: () => CatalogState
   /** Starts the single shared load when idle; a no-op while loading, ready or failed (use retry). */
   ensureLoaded: () => void
-  /** Starts a fresh load after a failure. */
+  /** Starts a fresh load after a failure, keeping any earlier places/sources visible meanwhile. */
   retry: () => void
+  /** Reloads from `ready`, keeping the current places/sources until the new load succeeds. */
+  refresh: () => void
 }
 
 const NO_PLACES: Place[] = []
@@ -28,9 +32,27 @@ const IDLE: CatalogState = { status: 'idle', places: NO_PLACES, sources: NO_SOUR
 
 const isAbort = (err: unknown) => err instanceof Error && err.name === 'AbortError'
 
-export function createCatalogStore(load: CatalogLoader = loadCatalog): CatalogStore {
+/** Manifest, then the hashed catalog it names, plus, in dev only, local eBird preview data; its failure never fails the catalog. */
+async function loadWithLocalPreview(signal: AbortSignal): Promise<Catalog> {
+  const release = await getRelease()
+  const catalog = await loadCatalog(release.catalogUrl, signal)
+  if (!import.meta.env.DEV) return catalog
+  const payload = await loadLocalHotspots(signal)
+  if (!payload) return catalog
+  const local = hotspotsToCatalog(payload)
+  const placeIds = new Set(catalog.places.map((p) => p.id))
+  const sourceIds = new Set(catalog.sources.map((s) => s.id))
+  return {
+    places: [...catalog.places, ...local.places.filter((p) => !placeIds.has(p.id))],
+    sources: sourceIds.has(local.source.id) ? catalog.sources : [...catalog.sources, local.source],
+  }
+}
+
+export function createCatalogStore(load: CatalogLoader = loadWithLocalPreview): CatalogStore {
   let state: CatalogState = IDLE
   let controller: AbortController | null = null
+  // State to go back to if a load is cancelled (idle for a first load, ready/error data for a reload).
+  let before: CatalogState = IDLE
   let subscriberCount = 0
   const listeners = new Set<() => void>()
 
@@ -42,9 +64,10 @@ export function createCatalogStore(load: CatalogLoader = loadCatalog): CatalogSt
   function start() {
     const own = new AbortController()
     controller = own
-    // Places and sources are dropped on loading/error; a successful load replaces them once.
-    set({ status: 'loading', places: NO_PLACES, sources: NO_SOURCES })
-    load(CATALOG_URL, own.signal).then(
+    before = state
+    // Earlier places and sources (same array identity) stay in place until a load succeeds.
+    set({ status: 'loading', places: state.places, sources: state.sources })
+    load(own.signal).then(
       (catalog) => {
         if (controller !== own) return
         controller = null
@@ -55,7 +78,7 @@ export function createCatalogStore(load: CatalogLoader = loadCatalog): CatalogSt
         if (controller !== own || own.signal.aborted || isAbort(err)) return
         controller = null
         const error = err instanceof Error ? err.message : 'Could not load places.'
-        set({ status: 'error', places: NO_PLACES, sources: NO_SOURCES, error })
+        set({ status: 'error', places: state.places, sources: state.sources, error })
       },
     )
   }
@@ -75,7 +98,7 @@ export function createCatalogStore(load: CatalogLoader = loadCatalog): CatalogSt
           const pending = controller
           controller = null
           pending?.abort()
-          set(IDLE)
+          set(before)
         }
       }
     },
@@ -85,6 +108,9 @@ export function createCatalogStore(load: CatalogLoader = loadCatalog): CatalogSt
     },
     retry() {
       if (state.status === 'error') start()
+    },
+    refresh() {
+      if (state.status === 'ready') start()
     },
   }
 }

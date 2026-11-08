@@ -1,0 +1,29 @@
+{
+  "sourceId": "proposed-greenway-trails",
+  "url": "https://data.townofcary.org/explore/dataset/proposed-greenway-trails/",
+  "licence": "CC0-1.0",
+  "licenceStatus": "open",
+  "attribution": "Town of Cary Open Data (CC0 1.0)",
+  "retrievedAt": "2026-11-07T17:40:42.606Z",
+  "sourceModified": "2026-11-01T23:01:20+00:00",
+  "recordCount": 1098,
+  "expectedCount": 1098,
+  "fields": [
+    "name",
+    "segment",
+    "segmentid",
+    "status",
+    "trailtype",
+    "surftype",
+    "length_in_miles",
+    "installdate",
+    "opentopublic",
+    "ada",
+    "equestrian",
+    "looptrail",
+    "loopname",
+    "projname",
+    "created_date",
+    "last_edited_date"
+  ]
+}

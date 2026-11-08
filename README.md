@@ -1,5 +1,7 @@
 # cary-explorer
 
+[![CI](https://github.com/SAMEERSMR/cary-explorer/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/SAMEERSMR/cary-explorer/actions/workflows/ci.yml)
+
 A public, mobile-friendly map "field guide" for Cary and Wake County, NC, covering parks, trails, birds, water and history. The data is static GeoJSON produced by an offline pipeline; there is no backend or database.
 
 ## Stack
@@ -38,6 +40,12 @@ npm run lint    # run oxlint
 ```
 
 Copy `.env.example` to `.env` for any server-side keys. Never expose them to the browser.
+
+## Docs
+
+Design and architecture decisions: [docs/decisions.md](docs/decisions.md)
+
+Per-town source coverage: [docs/source-matrix.md](docs/source-matrix.md)
 
 ## Deployment
 

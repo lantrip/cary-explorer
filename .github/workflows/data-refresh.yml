@@ -1,0 +1,86 @@
+name: Data refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Mondays 09:00 UTC
+    - cron: '0 9 * * 1'
+
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Refresh data and open a review PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: dev
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refresh data (snapshot, build, publish)
+        run: npm run data:refresh
+
+      - name: Test
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build app
+        run: npm run build
+
+      - name: Check data budgets
+        run: npm run check:budgets
+
+      - name: Open review PR when data changed
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No data changes; nothing to publish."
+            exit 0
+          fi
+          DATE="$(date -u +%Y-%m-%d)"
+          BRANCH="data-refresh/${RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "Data refresh ${DATE}"
+          git push origin "$BRANCH"
+          {
+            echo "Automated data refresh from run ${RUN_ID}."
+            echo
+            echo "## Refresh report"
+            echo
+            if [ -f pipeline/.last-run.json ]; then
+              echo '```json'
+              cat pipeline/.last-run.json
+              echo '```'
+            else
+              echo "No run report was written."
+            fi
+            echo
+            echo "Review the source counts and licence status before merging."
+          } > "$RUNNER_TEMP/pr-body.md"
+          gh pr create --base dev --head "$BRANCH" \
+            --title "Data refresh ${DATE}" \
+            --body-file "$RUNNER_TEMP/pr-body.md"

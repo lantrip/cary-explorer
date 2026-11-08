@@ -10,6 +10,12 @@ import OSM from 'ol/source/OSM'
  * The OSM credit is kept visible by the map's attribution control, which MapView
  * creates uncollapsed (see `defaults({ attributionOptions: { collapsible: false } })`).
  */
-export function createBasemapLayer(): BaseLayer {
-  return new TileLayer({ source: new OSM() })
+export function createBasemapLayer(onTile?: (event: 'error' | 'success') => void): BaseLayer {
+  const source = new OSM()
+  if (onTile) {
+    source.on('tileloaderror', () => onTile('error'))
+    source.on('tileloadend', () => onTile('success'))
+  }
+  // `cary-basemap` is muted by a CSS filter in map.css.
+  return new TileLayer({ source, className: 'cary-basemap' })
 }

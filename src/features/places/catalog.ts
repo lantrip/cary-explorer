@@ -1,29 +1,18 @@
 // Validated catalog loader: bounded streaming download plus hand-rolled parsing into Place/Source.
 import type { CategoryId, Place, Source } from '../../types/place'
+import { fetchBoundedJson } from '../../lib/boundedJson'
+import { finite, isRecord, nonEmpty, publicUrl } from '../../lib/guards'
 import { CATEGORY_THEME } from '../themes/themes'
+import { parseAmenities } from './amenities'
 
-export const CATALOG_URL = '/data/catalog.json'
+const COVERAGE_VALUES = ['core', 'nearby', 'outside'] as const
 
 export interface Catalog {
   places: Place[]
   sources: Source[]
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value)
-const nonEmpty = (value: unknown): value is string =>
-  typeof value === 'string' && value.trim().length > 0
-const finite = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isFinite(value)
-
-export function publicUrl(value: unknown): value is string {
-  if (typeof value !== 'string') return false
-  try {
-    return ['http:', 'https:'].includes(new URL(value).protocol)
-  } catch {
-    return false
-  }
-}
+export { publicUrl }
 
 function parseSource(item: unknown, index: number, ids: Set<string>): Source {
   const fail = (reason: string): never => {
@@ -34,17 +23,16 @@ function parseSource(item: unknown, index: number, ids: Set<string>): Source {
   if (ids.has(item.id)) return fail(`duplicate id "${item.id}"`)
   if (!nonEmpty(item.name)) return fail('name must be a non-empty string')
   if (!publicUrl(item.url)) return fail('url must be an http(s) URL')
-  if (item.retrievedAt !== undefined) {
-    if (!nonEmpty(item.retrievedAt) || !Number.isFinite(Date.parse(item.retrievedAt))) {
-      return fail('retrievedAt must be a parseable date')
-    }
+  // Optional in the TS type, but required at parse time: provenance is mandatory for every source.
+  if (!nonEmpty(item.retrievedAt) || !Number.isFinite(Date.parse(item.retrievedAt))) {
+    return fail('retrievedAt is required and must be a parseable date')
   }
-  if (item.license !== undefined && !nonEmpty(item.license)) {
-    return fail('license must be a non-empty string')
-  }
+  if (!nonEmpty(item.license)) return fail('license is required and must be a non-empty string')
   ids.add(item.id)
+  const title = typeof item.title === 'string' ? item.title.trim().slice(0, 200) : ''
   return {
     id: item.id,
+    ...(title ? { title } : {}),
     name: item.name,
     url: item.url,
     license: item.license as string | undefined,
@@ -73,7 +61,7 @@ function parsePlace(
   }
   const category = item.category as CategoryId
   if (!nonEmpty(item.municipality)) return fail('municipality must be a non-empty string')
-  if (item.county !== undefined && !nonEmpty(item.county)) {
+  if (!nonEmpty(item.county)) {
     return fail('county must be a non-empty string')
   }
   if (typeof item.description !== 'string') return fail('description must be a string')
@@ -108,6 +96,14 @@ function parsePlace(
     return fail('stationNumber must be an integer >= 1')
   }
 
+  if (item.url !== undefined && !(nonEmpty(item.url) && item.url.startsWith('https://') && publicUrl(item.url))) {
+    return fail('url must be an https URL')
+  }
+
+  if (item.coverage !== undefined && !(COVERAGE_VALUES as readonly unknown[]).includes(item.coverage)) {
+    return fail('coverage must be one of core, nearby, outside')
+  }
+
   if (!Array.isArray(item.sourceIds) || item.sourceIds.length === 0) {
     return fail('sourceIds must be a non-empty array')
   }
@@ -125,12 +121,15 @@ function parsePlace(
     category,
     theme: CATEGORY_THEME[category],
     municipality: item.municipality,
-    county: item.county as string | undefined,
+    county: item.county,
     centroid: [c[0], c[1]],
     bbox: b === undefined ? undefined : [b[0], b[1], b[2], b[3]],
     description: item.description,
     address: item.address as string | undefined,
     stationNumber: item.stationNumber as number | undefined,
+    url: item.url as string | undefined,
+    coverage: item.coverage as Place['coverage'],
+    amenities: parseAmenities(item.amenities),
     sourceIds: item.sourceIds as string[],
   }
 }
@@ -152,27 +151,12 @@ export async function loadCatalog(
   signal: AbortSignal,
   maxBytes = 2_000_000,
 ): Promise<{ places: Place[]; sources: Source[] }> {
-  const response = await fetch(url, { signal })
-  if (!response.ok) throw new Error(`Catalog request failed (${response.status}).`)
-  if (!response.body) throw new Error('Catalog response has no body.')
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
-  let bytes = 0
-  let text = ''
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      bytes += value.byteLength
-      if (bytes > maxBytes) {
-        await reader.cancel()
-        throw new Error('Catalog exceeds the download budget; split it into smaller files.')
-      }
-      text += decoder.decode(value, { stream: true })
-    }
-    signal.throwIfAborted()
-    return parseCatalog(JSON.parse(text + decoder.decode()))
-  } finally {
-    reader.releaseLock()
-  }
+  return parseCatalog(
+    await fetchBoundedJson(url, {
+      signal,
+      maxBytes,
+      label: 'Catalog',
+      budgetMessage: 'Catalog exceeds the download budget; split it into smaller files.',
+    }),
+  )
 }

@@ -1,0 +1,25 @@
+{
+  "sourceId": "wake-greenways",
+  "url": "https://maps.wake.gov/arcgis/rest/services/OpenSpace/Greenways/MapServer/0",
+  "licence": "CC-BY-4.0",
+  "licenceStatus": "open",
+  "attribution": "Wake County GIS (CC BY 4.0)",
+  "retrievedAt": "2026-11-07T21:09:55.268Z",
+  "sourceModified": "2026-02-18T20:29:07.000Z",
+  "recordCount": 1299,
+  "expectedCount": 1299,
+  "fields": [
+    "OBJECTID",
+    "TRAIL_NAME",
+    "CORRIDOR_NAME",
+    "OWNER",
+    "TRAIL_STATUS",
+    "TRAIL_SURFACE",
+    "TRAIL_CLASS",
+    "ACCESSIBILITY_STATUS",
+    "PUBLIC_ACCESS",
+    "BIKE",
+    "HIKE",
+    "DOG"
+  ]
+}

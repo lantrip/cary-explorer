@@ -1,0 +1,44 @@
+{
+ "collections": [
+  {
+   "id": "short-visit-restroom",
+   "title": "Parks with restrooms and mapped entrances",
+   "summary": "Parks with a confirmed restroom and a recorded entrance; the 12 with the most confirmed facilities, of 110 that qualify.",
+   "placeIds": [
+    "wake-park-hunter-street-park",
+    "wake-park-lake-benson-park",
+    "wake-park-wendell-park",
+    "cary-park-carpenter-park",
+    "cary-park-davis-drive-park",
+    "cary-park-fred-g-bond-metro-park",
+    "cary-park-jack-smith-park",
+    "cary-park-middle-creek-school-park",
+    "cary-park-north-cary-park",
+    "cary-park-robert-v-godbold-park",
+    "cary-park-sears-farm-road-park",
+    "cary-park-thomas-e-brooks-park"
+   ],
+   "curation": "Parks with a recorded restroom and entrance (a park with either unknown is left out), most confirmed facilities first, Cary first on ties, then by name; top 12 of 110 qualifying parks."
+  },
+  {
+   "id": "paved-trails",
+   "title": "Paved trails",
+   "summary": "Trails whose surface is recorded as paved; the 12 longest, of 62 that qualify.",
+   "placeIds": [
+    "cary-greenway-black-creek-greenway",
+    "cary-greenway-swift-creek-greenway",
+    "wake-greenway-middle-creek-greenway",
+    "cary-greenway-panther-creek-greenway",
+    "cary-greenway-morris-branch-greenway",
+    "cary-greenway-crabtree-creek-greenway",
+    "wake-greenway-oak-leaf-greenway",
+    "wake-greenway-white-oak-creek-greenway",
+    "cary-greenway-green-level-greenway",
+    "cary-greenway-green-hope-school-greenway",
+    "cary-greenway-nancy-branch-greenway",
+    "cary-greenway-symphony-lake-greenway"
+   ],
+   "curation": "Trails with a confirmed paved surface (partly paved trails are left out), longest first by the trail length computed from the greenway data, then by name; top 12 of 62 qualifying trails. This says nothing about wheelchair access."
+  }
+ ]
+}

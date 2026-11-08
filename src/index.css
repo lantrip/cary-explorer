@@ -1,6 +1,37 @@
 /* Global styles: Tailwind CSS v4 entry point. */
 @import "tailwindcss";
 
+/* Field-guide design tokens. Exposed as Tailwind utilities (bg-forest, text-ink, font-display, rounded-card, ...). */
+@theme {
+  --color-ink: #1C2420;
+  --color-ink-soft: #2D3732;
+  --color-ink-muted: #5B655F;
+  --color-forest: #1F6F5C;
+  --color-forest-tint: #E6F2EE;
+  --color-pine-glow: rgba(31,111,92,0.18);
+  --color-link: #1F6F5C;
+  --color-ground: #F7F6F2;
+  --color-panel: #FFFFFF;
+  --color-subtle: #F1EFEA;
+  --color-line: #E6E3DC;
+  --color-edge: #8A938B;
+  --color-placeholder-line: #B9B3A5;
+  --color-warn-bg: #FBEBC4;
+  --color-warn-ink: #6B4300;
+  --color-error-edge: #C9A99A;
+  --font-sans: "Inter Variable", Inter, system-ui, sans-serif;
+  --font-display: "Fraunces Variable", Fraunces, Georgia, serif;
+  --radius-control: 12px;
+  --radius-card: 16px;
+  --radius-sheet: 22px;
+}
+
+body {
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
 html,
 body,
 #root {
@@ -9,7 +40,7 @@ body,
 
 /* Fallback focus ring for any control that does not set its own. */
 :focus-visible {
-  outline: 3px solid #165dce;
+  outline: 3px solid var(--color-link);
   outline-offset: 2px;
 }
 

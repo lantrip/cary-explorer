@@ -1,0 +1,18 @@
+{
+  "sourceId": "census-places",
+  "url": "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer/4",
+  "licence": "Public Domain (US Census)",
+  "licenceStatus": "open",
+  "attribution": "US Census Bureau TIGERweb (public domain)",
+  "retrievedAt": "2026-11-07T17:47:23.315Z",
+  "sourceModified": null,
+  "recordCount": 12,
+  "expectedCount": 12,
+  "fields": [
+    "GEOID",
+    "BASENAME",
+    "NAME",
+    "STATE",
+    "LSADC"
+  ]
+}

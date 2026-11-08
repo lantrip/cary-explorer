@@ -1,11 +1,29 @@
 // Search combobox over the full catalog, limited to active themes, with full ARIA combobox keyboard support.
 import { useId, useMemo, useState, type KeyboardEvent } from 'react'
 import { useAppStore } from '../../store/useAppStore'
-import { useIsDesktop } from '../../lib/useIsDesktop'
+import { CategoryBadge } from '../themes/CategoryIcon'
 import { categoryLabel, getTheme } from '../themes/themes'
+import { usePlaces } from '../places/usePlaces'
+import { LAYER_IDS, emptyLayersText, resolveLayers, type LayerId } from '../themes/layerSelection'
+import { CATEGORY_THEME } from '../themes/themes'
+import { TOWNS } from '../towns/coverage'
+import type { CategoryId, Place, ThemeId } from '../../types/place'
+import { IntentConfirmation, NearPanel, type NearIntent } from './IntentPanels'
+import { intentLabel, parseIntent, planCategoryInTown, type Intent } from './intent'
+import { useLayerSearch } from './useLayerSearch'
 import { usePlaceSearch } from './usePlaceSearch'
 
 const MAX_RESULTS = 8
+const ALL_CATEGORIES = Object.keys(CATEGORY_THEME) as CategoryId[]
+
+/** What "Undo" puts back after a "category in town" intent. */
+interface AppliedTown {
+  text: string
+  town: string
+  prevTown: string | null
+  prevThemes: ThemeId[]
+  prevLayers: LayerId[]
+}
 
 export function SearchBox() {
   const activeThemes = useAppStore((s) => s.activeThemes)
@@ -13,40 +31,102 @@ export function SearchBox() {
   const setSearchQuery = useAppStore((s) => s.setSearchQuery)
   const setSelectedPlaceId = useAppStore((s) => s.setSelectedPlaceId)
   const setView = useAppStore((s) => s.setView)
-  const isDesktop = useIsDesktop()
 
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const baseId = useId()
   const listId = `${baseId}-list`
 
+  const { status, retry, places } = usePlaces()
   const search = usePlaceSearch()
-  const results = useMemo(
-    () => (query.trim() ? search(query, { themes: activeThemes }, MAX_RESULTS) : []),
-    [search, query, activeThemes],
+  const town = useAppStore((s) => s.town)
+  const placesById = useMemo(() => new Map(places.map((p) => [p.id, p])), [places])
+  const intent = useMemo(
+    () => (query.trim() ? parseIntent(query, { towns: TOWNS, categories: ALL_CATEGORIES, places, search }) : null),
+    [query, places, search],
   )
+  const intentText = intent ? intentLabel(intent, TOWNS, placesById) : null
+  const [applied, setApplied] = useState<AppliedTown | null>(null)
+  const [near, setNear] = useState<NearIntent | null>(null)
+  // Same selection as the map and list: hidden layers are not searched, but named when they hold the matches.
+  const { results, hiddenLayers } = useLayerSearch(query, MAX_RESULTS, true)
 
   const hasQuery = query.trim() !== ''
-  const expanded = open && results.length > 0
-  const active = Math.min(activeIndex, results.length - 1)
+  // The suggested intent row is option 0 when the text parses; place results follow it.
+  const offset = intentText ? 1 : 0
+  const total = results.length + offset
+  const expanded = open && total > 0
+  const noThemes = activeThemes.length === 0
+  // Why the results area is empty. Loading and failure take priority over "No places found".
+  const emptyMessage =
+    status === 'loading'
+      ? 'Loading places…'
+      : status === 'error'
+        ? "Couldn't load places."
+        : noThemes
+          ? 'No themes selected'
+          : `No places found.${hiddenLayers.length ? ` ${emptyLayersText(hiddenLayers)}` : ''}`
+  const showEmpty = hasQuery && total === 0 && (status === 'error' || open)
+  const active = Math.min(activeIndex, total - 1)
   const optionId = (i: number) => `${baseId}-opt-${i}`
 
-  function select(i: number) {
-    const place = results[i]
-    if (!place) return
+  function applyIntent(it: Intent) {
+    const label = intentText
+    setSearchQuery('')
+    setOpen(false)
+    if (it.kind === 'category-near-place') {
+      setApplied(null)
+      setNear({ placeId: it.placeId, categoryIds: it.categoryIds })
+      return
+    }
+    setNear(null)
+    const state = useAppStore.getState()
+    const plan = planCategoryInTown(it, state.activeThemes, state.layerOverrides)
+    setApplied({
+      text: `${label ?? 'Showing'}`.replace(/^Show /, 'Showing '),
+      town: plan.town,
+      prevTown: state.town,
+      prevThemes: state.activeThemes,
+      prevLayers: resolveLayers(state.activeThemes, state.layerOverrides),
+    })
+    state.setTown(plan.town)
+    if (plan.themesChanged) state.setActiveThemes(plan.themes)
+    for (const c of plan.layerChanges) state.setLayer(c.id, c.on)
+  }
+
+  function undoTown() {
+    if (!applied) return
+    const state = useAppStore.getState()
+    state.setTown(applied.prevTown)
+    state.setActiveThemes(applied.prevThemes)
+    const now = resolveLayers(useAppStore.getState().activeThemes, useAppStore.getState().layerOverrides)
+    for (const id of LAYER_IDS) {
+      if (applied.prevLayers.includes(id) !== now.includes(id)) state.setLayer(id, applied.prevLayers.includes(id))
+    }
+    setApplied(null)
+  }
+
+  function pickPlace(place: Place) {
     setSelectedPlaceId(place.id)
     setSearchQuery('')
     setOpen(false)
-    if (!isDesktop) setView('map')
+    setNear(null)
+    setView('map')
+  }
+
+  function select(i: number) {
+    if (intent && intentText && i === 0) return applyIntent(intent)
+    const place = results[i - offset]
+    if (place) pickPlace(place)
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      if (results.length === 0) return
+      if (total === 0) return
       e.preventDefault()
       setOpen(true)
       const step = e.key === 'ArrowDown' ? 1 : -1
-      setActiveIndex((Math.max(active, 0) + step + results.length) % results.length)
+      setActiveIndex((Math.max(active, 0) + step + total) % total)
     } else if (e.key === 'Enter') {
       if (expanded) {
         e.preventDefault()
@@ -54,7 +134,10 @@ export function SearchBox() {
       }
     } else if (e.key === 'Escape') {
       if (expanded) setOpen(false)
-      else setSearchQuery('')
+      else {
+        setSearchQuery('')
+        setNear(null)
+      }
     }
   }
 
@@ -63,6 +146,20 @@ export function SearchBox() {
       <label htmlFor={`${baseId}-input`} className="sr-only">
         Search places
       </label>
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-ink-muted"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="M20 20l-3.5-3.5" />
+      </svg>
       <input
         id={`${baseId}-input`}
         type="text"
@@ -72,26 +169,43 @@ export function SearchBox() {
         aria-autocomplete="list"
         aria-activedescendant={expanded ? optionId(active) : undefined}
         autoComplete="off"
-        placeholder="Search places"
+        placeholder="Search parks, trails, creeks…"
         value={query}
         onChange={(e) => {
           setSearchQuery(e.target.value)
+          setNear(null)
           setActiveIndex(0)
           setOpen(true)
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onKeyDown={onKeyDown}
-        className="min-h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+        className="h-12 w-full rounded-control border border-edge bg-ground pr-4 pl-11 text-base text-ink placeholder:text-ink-muted focus:border-forest focus:bg-white focus:shadow-[0_0_0_4px_var(--color-pine-glow)] focus:outline-none"
       />
       <ul
         id={listId}
         role="listbox"
         aria-label="Search results"
         hidden={!expanded}
-        className="absolute inset-x-0 top-full z-30 mt-1 max-h-80 overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg"
+        className="absolute inset-x-0 top-full z-30 mt-1.5 max-h-80 overflow-y-auto rounded-card border border-line bg-white p-1.5 shadow-[0_12px_32px_rgba(31,42,36,0.14)]"
       >
-        {results.map((place, i) => (
+        {intent && intentText && (
+          <li
+            id={optionId(0)}
+            role="option"
+            aria-selected={active === 0}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => select(0)}
+            className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-control px-3 text-sm font-medium text-forest ${
+              active === 0 ? 'bg-forest-tint' : ''
+            }`}
+          >
+            {intentText}
+          </li>
+        )}
+        {results.map((place, k) => {
+          const i = k + offset
+          return (
           <li
             key={place.id}
             id={optionId(i)}
@@ -100,31 +214,49 @@ export function SearchBox() {
             // Keep focus in the input so the combobox stays active while clicking.
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => select(i)}
-            className={`flex min-h-11 cursor-pointer items-center gap-2 px-3 py-2 text-sm ${
-              i === active ? 'bg-blue-50' : ''
+            className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-control px-3 text-sm ${
+              i === active ? 'bg-forest-tint' : ''
             }`}
           >
-            <span
-              aria-hidden="true"
-              className="h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: getTheme(place.theme).color }}
+            <CategoryBadge
+              category={place.category}
+              color={getTheme(place.theme).color}
+              size="sm"
             />
             <span className="min-w-0">
-              <span className="block truncate">{place.name}</span>
-              <span className="block truncate text-xs text-neutral-600">
+              <span className="block truncate text-sm font-medium text-ink">{place.name}</span>
+              <span className="block truncate text-[13px] text-ink-muted">
                 {categoryLabel[place.category]} · {place.municipality}
               </span>
             </span>
           </li>
-        ))}
+          )
+        })}
       </ul>
-      {open && hasQuery && results.length === 0 && (
-        <div className="absolute inset-x-0 top-full z-30 mt-1 rounded-lg border border-neutral-200 bg-white px-3 py-3 text-sm text-neutral-600 shadow-lg">
-          No places found
+      {applied && town === applied.town && <IntentConfirmation text={applied.text} onUndo={undoTown} />}
+      {near && <NearPanel near={near} placesById={placesById} onPick={pickPlace} onClose={() => setNear(null)} />}
+      {showEmpty && (
+        <div className="absolute inset-x-0 top-full z-30 mt-1.5 space-y-2 rounded-card border border-line bg-white px-4 py-3 text-sm text-ink-muted shadow-[0_12px_32px_rgba(31,42,36,0.14)]">
+          <p>{emptyMessage}</p>
+          {status === 'error' && (
+            <button
+              type="button"
+              onClick={retry}
+              className="min-h-11 rounded-control border border-forest px-4 text-sm font-semibold text-forest hover:bg-forest-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link"
+            >
+              Try again
+            </button>
+          )}
         </div>
       )}
       <div role="status" className="sr-only">
-        {hasQuery ? (results.length === 1 ? '1 result' : `${results.length} results`) : ''}
+        {!hasQuery
+          ? ''
+          : total === 0
+            ? emptyMessage
+            : total === 1
+              ? '1 result'
+              : `${total} results`}
       </div>
     </div>
   )

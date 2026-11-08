@@ -1,0 +1,260 @@
+{
+  "visibility": "domain",
+  "fields": [
+    {
+      "name": "name",
+      "description": null,
+      "annotations": {},
+      "label": "Name",
+      "type": "text"
+    },
+    {
+      "name": "uselevel1",
+      "description": null,
+      "annotations": {},
+      "label": "Use Level 1",
+      "type": "text"
+    },
+    {
+      "name": "uselevel2",
+      "description": null,
+      "annotations": {},
+      "label": "Use Level 2",
+      "type": "text"
+    },
+    {
+      "name": "uselevel3",
+      "description": null,
+      "annotations": {},
+      "label": "Use Level 3",
+      "type": "text"
+    },
+    {
+      "name": "owner",
+      "description": null,
+      "annotations": {},
+      "label": "Owner",
+      "type": "text"
+    },
+    {
+      "name": "calcacreag",
+      "description": null,
+      "annotations": {},
+      "label": "Calc. Acreage",
+      "type": "double"
+    },
+    {
+      "name": "townzone",
+      "description": null,
+      "annotations": {},
+      "label": "Town Zone",
+      "type": "text"
+    },
+    {
+      "name": "realid",
+      "description": null,
+      "annotations": {},
+      "label": "Realid",
+      "type": "text"
+    },
+    {
+      "name": "deedbook",
+      "description": null,
+      "annotations": {},
+      "label": "Deed Book",
+      "type": "text"
+    },
+    {
+      "name": "deedpage",
+      "description": null,
+      "annotations": {},
+      "label": "Deed Page",
+      "type": "text"
+    },
+    {
+      "name": "bookofmaps",
+      "description": null,
+      "annotations": {},
+      "label": "Book of Maps",
+      "type": "text"
+    },
+    {
+      "name": "mappage",
+      "description": null,
+      "annotations": {},
+      "label": "Map Page",
+      "type": "text"
+    },
+    {
+      "name": "cedeedbook",
+      "description": null,
+      "annotations": {},
+      "label": "CE Deed Book",
+      "type": "text"
+    },
+    {
+      "name": "cedeedpage",
+      "description": null,
+      "annotations": {},
+      "label": "CE Deed Page",
+      "type": "text"
+    },
+    {
+      "name": "documentli",
+      "description": null,
+      "annotations": {},
+      "label": "Document Link",
+      "type": "text"
+    },
+    {
+      "name": "documentl1",
+      "description": null,
+      "annotations": {},
+      "label": "Document Link 1",
+      "type": "text"
+    },
+    {
+      "name": "created_date",
+      "description": null,
+      "annotations": {
+        "timeserie_precision": "minute"
+      },
+      "label": "Created Date",
+      "type": "datetime"
+    },
+    {
+      "name": "last_edited_date",
+      "description": null,
+      "annotations": {
+        "timeserie_precision": "minute"
+      },
+      "label": "Last Edited Date",
+      "type": "datetime"
+    },
+    {
+      "name": "shape_area",
+      "description": "This assumes a flat plane and does not account for variations in elevation.",
+      "annotations": {
+        "unit": "sqft"
+      },
+      "label": "Shape.STArea()",
+      "type": "double"
+    },
+    {
+      "name": "shape_length",
+      "description": null,
+      "annotations": {
+        "unit": "ft"
+      },
+      "label": "Shape.STLength()",
+      "type": "double"
+    },
+    {
+      "name": "geo_shape",
+      "description": null,
+      "annotations": {},
+      "label": "Geo Shape",
+      "type": "geo_shape"
+    },
+    {
+      "name": "geo_point_2d",
+      "description": null,
+      "annotations": {},
+      "label": "geo_point_2d",
+      "type": "geo_point_2d"
+    }
+  ],
+  "dataset_id": "parks-and-recreation-feature-polygons",
+  "dataset_uid": "da_l681dx",
+  "has_records": true,
+  "features": [
+    "timeserie",
+    "geo",
+    "analyze"
+  ],
+  "attachments": [],
+  "alternative_exports": [],
+  "data_visible": true,
+  "metas": {
+    "default": {
+      "title": "Parks and Recreation Features",
+      "description": "<p>This dataset contains information on Cary's more than 30 <a href=\"https://www.townofcary.org/recreation-enjoyment/parks-greenways-environment/parks\" target=\"_blank\"><u>public parks and natural areas</u></a>.</p>",
+      "theme": [
+        "Geographic Information System (GIS)",
+        "Sports, Leisure"
+      ],
+      "keyword": [
+        "Parks and Recreation",
+        "Park Features"
+      ],
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "language": "en",
+      "modified": "2026-10-31T23:00:59+00:00",
+      "publisher": "Cary",
+      "references": "https://maps-apis.carync.gov/server/rest/services/ParksRecreation/Parks/FeatureServer/5",
+      "attributions": null,
+      "update_frequency": null,
+      "bbox": {
+        "type": "Feature",
+        "geometry": {
+          "coordinates": [
+            [
+              [
+                -78.73629952780902,
+                35.8609033562243
+              ],
+              [
+                -78.93175109289587,
+                35.8609033562243
+              ],
+              [
+                -78.93175109289587,
+                35.6623695557937
+              ],
+              [
+                -78.73629952780902,
+                35.6623695557937
+              ],
+              [
+                -78.73629952780902,
+                35.8609033562243
+              ]
+            ]
+          ],
+          "type": "Polygon"
+        },
+        "properties": {}
+      },
+      "data_processed": "2026-10-31T23:00:59+00:00",
+      "federated": false,
+      "geographic_reference": [
+        "us_80_3701520",
+        "us_80_3710740"
+      ],
+      "geographic_reference_auto": true,
+      "geometry_types": [
+        "MultiPolygon",
+        "Polygon"
+      ],
+      "metadata_languages": [
+        "en"
+      ],
+      "metadata_processed": "2026-10-31T23:00:59.570000+00:00",
+      "modified_updates_on_data_change": true,
+      "modified_updates_on_metadata_change": true,
+      "parent_domain": null,
+      "records_count": 867,
+      "shared_catalog": null,
+      "source_dataset": null,
+      "source_domain": null,
+      "source_domain_address": null,
+      "source_domain_title": null,
+      "territory": [
+        "Apex",
+        "Cary"
+      ],
+      "timezone": "US/Eastern"
+    }
+  }
+}

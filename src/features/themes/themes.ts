@@ -5,14 +5,16 @@ export interface Theme {
   id: ThemeId
   label: string
   color: string
+  /** Pale tint of the theme colour, for chips and backgrounds. */
+  tint: string
 }
 
 export const THEMES: readonly Theme[] = [
-  { id: 'parks-trails', label: 'Parks & trails', color: '#2e8b4f' },
-  { id: 'history', label: 'History', color: '#a0522d' },
-  { id: 'birds-wildlife', label: 'Birds & wildlife', color: '#d98a00' },
-  { id: 'water', label: 'Water', color: '#1f6fd1' },
-  { id: 'art-community', label: 'Art & community', color: '#9b3fb5' },
+  { id: 'parks-trails', label: 'Parks & trails', color: '#2F7A4A', tint: '#E7F1EA' },
+  { id: 'history', label: 'History', color: '#A3502E', tint: '#F6E9E3' },
+  { id: 'birds-wildlife', label: 'Birds & wildlife', color: '#B0650F', tint: '#F8EEDF' },
+  { id: 'water', label: 'Water', color: '#2A6CA6', tint: '#E4EEF6' },
+  { id: 'art-community', label: 'Art & community', color: '#85509A', tint: '#F1E8F4' },
 ]
 
 export function getTheme(id: ThemeId): Theme {

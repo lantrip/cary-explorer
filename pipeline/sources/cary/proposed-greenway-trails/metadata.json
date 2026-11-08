@@ -1,0 +1,318 @@
+{
+  "visibility": "domain",
+  "fields": [
+    {
+      "name": "name",
+      "description": null,
+      "annotations": {},
+      "label": "Trail Name",
+      "type": "text"
+    },
+    {
+      "name": "segment",
+      "description": null,
+      "annotations": {},
+      "label": "Segment",
+      "type": "text"
+    },
+    {
+      "name": "length_in_miles",
+      "description": null,
+      "annotations": {
+        "unit": "mi"
+      },
+      "label": "Length in Miles",
+      "type": "double"
+    },
+    {
+      "name": "length",
+      "description": null,
+      "annotations": {
+        "unit": "ft"
+      },
+      "label": "Segment Length in Feet",
+      "type": "double"
+    },
+    {
+      "name": "width",
+      "description": null,
+      "annotations": {
+        "unit": "ft"
+      },
+      "label": "Segement Width",
+      "type": "double"
+    },
+    {
+      "name": "trailtype",
+      "description": null,
+      "annotations": {},
+      "label": "Trail Type",
+      "type": "text"
+    },
+    {
+      "name": "surftype",
+      "description": null,
+      "annotations": {},
+      "label": "Surface Type",
+      "type": "text"
+    },
+    {
+      "name": "status",
+      "description": null,
+      "annotations": {},
+      "label": "Status",
+      "type": "text"
+    },
+    {
+      "name": "installdate",
+      "description": null,
+      "annotations": {},
+      "label": "Install Date",
+      "type": "datetime"
+    },
+    {
+      "name": "builtby",
+      "description": null,
+      "annotations": {},
+      "label": "Built By",
+      "type": "text"
+    },
+    {
+      "name": "ownedby",
+      "description": null,
+      "annotations": {},
+      "label": "Owned By",
+      "type": "text"
+    },
+    {
+      "name": "maintby",
+      "description": null,
+      "annotations": {},
+      "label": "Managed By",
+      "type": "text"
+    },
+    {
+      "name": "priorcorr",
+      "description": null,
+      "annotations": {},
+      "label": "Cross Town Corridor",
+      "type": "text"
+    },
+    {
+      "name": "pilzone",
+      "description": null,
+      "annotations": {},
+      "label": "Zone",
+      "type": "text"
+    },
+    {
+      "name": "equestrian",
+      "description": null,
+      "annotations": {},
+      "label": "Horseback Riding Allowed",
+      "type": "text"
+    },
+    {
+      "name": "ada",
+      "description": null,
+      "annotations": {},
+      "label": "ADA",
+      "type": "text"
+    },
+    {
+      "name": "projname",
+      "description": null,
+      "annotations": {},
+      "label": "Project Name",
+      "type": "text"
+    },
+    {
+      "name": "projnum",
+      "description": null,
+      "annotations": {},
+      "label": "Project Number",
+      "type": "text"
+    },
+    {
+      "name": "notes",
+      "description": null,
+      "annotations": {},
+      "label": "Notes",
+      "type": "text"
+    },
+    {
+      "name": "looptrail",
+      "description": null,
+      "annotations": {},
+      "label": "Loop Trail",
+      "type": "text"
+    },
+    {
+      "name": "loopname",
+      "description": null,
+      "annotations": {},
+      "label": "Loop Name",
+      "type": "text"
+    },
+    {
+      "name": "opentopublic",
+      "description": null,
+      "annotations": {},
+      "label": "Open to Public",
+      "type": "text"
+    },
+    {
+      "name": "carygwaymicount",
+      "description": null,
+      "annotations": {},
+      "label": "Official Cary Greenway Miles",
+      "type": "double"
+    },
+    {
+      "name": "created_date",
+      "description": null,
+      "annotations": {
+        "timeserie_precision": "minute"
+      },
+      "label": "Created Date",
+      "type": "datetime"
+    },
+    {
+      "name": "last_edited_date",
+      "description": null,
+      "annotations": {
+        "timeserie_precision": "minute"
+      },
+      "label": "Last Edited Date",
+      "type": "datetime"
+    },
+    {
+      "name": "shape_stlength",
+      "description": null,
+      "annotations": {
+        "unit": "ft"
+      },
+      "label": "Shape.STLength()",
+      "type": "double"
+    },
+    {
+      "name": "segmentid",
+      "description": null,
+      "annotations": {},
+      "label": "SEGMENTID",
+      "type": "int"
+    },
+    {
+      "name": "geo_shape",
+      "description": null,
+      "annotations": {},
+      "label": "geo_shape",
+      "type": "geo_shape"
+    },
+    {
+      "name": "geo_point_2d",
+      "description": null,
+      "annotations": {},
+      "label": "geo_point_2d",
+      "type": "geo_point_2d"
+    }
+  ],
+  "dataset_id": "proposed-greenway-trails",
+  "dataset_uid": "da_vbkvub",
+  "has_records": true,
+  "features": [
+    "timeserie",
+    "geo",
+    "analyze"
+  ],
+  "attachments": [],
+  "alternative_exports": [],
+  "data_visible": true,
+  "metas": {
+    "default": {
+      "title": "Greenway Trails Existing and Proposed",
+      "description": "<p style=\"font-family: sans-serif;\">This dataset contains information on Cary’s proposed greenway system, including connectors and street side trails. If you're looking for the current status of Cary's greenway system, look to the Existing Greenway Trails dataset.<br><br>A greenway is a linear parcel of land set aside to preserve open space. Greenways are generally located in floodplain areas, along wooded stream corridors unsuitable for development. Often these corridors that harbor Cary’s greenway trails provide access to these pristine areas that otherwise would have been lost.<br><br>Since 1980, the Town of Cary has been building greenways to bring open spaces within easy walking distance of our homes. Greenways are an environmental, economic, and recreational resource for all to enjoy.<br><br>Greenways enhance our lives in many ways by:</p><ul><li>Providing a recreational amenity for walking, jogging, and bicycling in a natural setting remote from traffic;</li><li>Preserving pristine open space to enhance Cary's quality of life;</li><li>Linking our neighborhoods with parks, schools, community centers, and other neighborhoods;</li><li>Helping control stormwater runoff, curb erosion, and minimize flooding which can damage our property;</li><li>Improving Cary's water quality by buffering streams, filtering pollutants, and recharging our groundwater;</li><li>Adding value to our property by merit of proximity.</li></ul><p style=\"font-family: sans-serif;\">For more information see our <a href=\"https://www.townofcary.org/recreation-enjoyment/parks-greenways-environment/greenways\" target=\"_blank\"><u>greenways web page</u></a>.<br><br>This dataset is updated as new greenway trails are proposed and existing greenway trails are altered.</p>",
+      "theme": [
+        "Sports, Leisure",
+        "Geographic Information System (GIS)",
+        "Health"
+      ],
+      "keyword": [
+        "Greenways",
+        "Trails",
+        "Hiking",
+        "Biking",
+        "Recreation",
+        "GIS"
+      ],
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "language": "en",
+      "modified": "2026-11-01T23:01:20+00:00",
+      "publisher": "Cary",
+      "references": "https://maps-apis.carync.gov/server/rest/services/ParksRecreation/Parks/MapServer/2",
+      "attributions": null,
+      "update_frequency": "WEEKLY",
+      "bbox": {
+        "type": "Feature",
+        "geometry": {
+          "coordinates": [
+            [
+              [
+                -78.72112484648824,
+                35.86795802693814
+              ],
+              [
+                -78.96599049679935,
+                35.86795802693814
+              ],
+              [
+                -78.96599049679935,
+                35.642686751671135
+              ],
+              [
+                -78.72112484648824,
+                35.642686751671135
+              ],
+              [
+                -78.72112484648824,
+                35.86795802693814
+              ]
+            ]
+          ],
+          "type": "Polygon"
+        },
+        "properties": {}
+      },
+      "data_processed": "2026-11-01T23:01:20+00:00",
+      "federated": false,
+      "geographic_reference": [
+        "us_60_37183",
+        "us_60_37063"
+      ],
+      "geographic_reference_auto": true,
+      "geometry_types": [
+        "LineString",
+        "MultiLineString"
+      ],
+      "metadata_languages": [
+        "en"
+      ],
+      "metadata_processed": "2026-11-01T23:01:20.860000+00:00",
+      "modified_updates_on_data_change": true,
+      "modified_updates_on_metadata_change": true,
+      "parent_domain": null,
+      "records_count": 1098,
+      "shared_catalog": null,
+      "source_dataset": null,
+      "source_domain": null,
+      "source_domain_address": null,
+      "source_domain_title": null,
+      "territory": [
+        "Wake",
+        "Durham"
+      ],
+      "timezone": null
+    }
+  }
+}

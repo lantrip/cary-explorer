@@ -9,6 +9,7 @@ export interface PlacesResult {
   status: 'loading' | 'ready' | 'error'
   error?: string
   retry: () => void
+  refresh: () => void
 }
 
 export function usePlaces(): PlacesResult {
@@ -26,6 +27,7 @@ export function usePlaces(): PlacesResult {
       status: snapshot.status === 'idle' ? 'loading' : snapshot.status,
       error: snapshot.error,
       retry: catalogStore.retry,
+      refresh: catalogStore.refresh,
     }),
     [snapshot],
   )

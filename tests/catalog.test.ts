@@ -7,6 +7,7 @@ const source = {
   name: 'Example source',
   url: 'https://example.org/places',
   retrievedAt: '2026-11-02T12:00:00Z',
+  license: 'CC0 1.0',
 }
 
 const place = (id: string, name: string, overrides: Record<string, unknown> = {}) => ({
@@ -15,6 +16,7 @@ const place = (id: string, name: string, overrides: Record<string, unknown> = {}
   aliases: [],
   category: 'park',
   municipality: 'Example Town',
+  county: 'Wake',
   centroid: [-78.8, 35.8],
   description: 'Synthetic test record.',
   sourceIds: ['example-source'],
@@ -64,7 +66,28 @@ describe('catalog boundary', () => {
     const result = await loadCatalog('/catalog.json', controller.signal)
     expect(result.places.map((p) => p.id)).toEqual(['one'])
     expect(result.sources.map((s) => s.id)).toEqual(['example-source'])
-    expect(fetchMock).toHaveBeenCalledWith('/catalog.json', { signal: controller.signal })
+    const init = fetchMock.mock.calls[0][1] as RequestInit
+    expect(fetchMock.mock.calls[0][0]).toBe('/catalog.json')
+    // The fetch gets a linked signal (caller plus timeout); propagation is covered in boundedJson.test.ts.
+    expect(init.signal?.aborted).toBe(false)
+  })
+
+  it('keeps an optional trimmed source title, capped at 200 chars, and drops blank or non-string ones', () => {
+    const titled = (title: unknown) => parseCatalog(catalog([], [{ ...source, title }])).sources[0].title
+    expect(titled('  Parks in Wake County ')).toBe('Parks in Wake County')
+    expect(titled('x'.repeat(300))).toHaveLength(200)
+    expect(titled('   ')).toBeUndefined()
+    expect(titled(5)).toBeUndefined()
+    expect(parseCatalog(catalog([])).sources[0].title).toBeUndefined()
+  })
+
+  it('accepts optional coverage values and rejects any other', () => {
+    const accepted = parseCatalog(catalog([place('one', 'Example Park', { coverage: 'nearby' })]))
+    expect(accepted.places[0].coverage).toBe('nearby')
+    expect(parseCatalog(catalog([place('two', 'Example Park')])).places[0].coverage).toBeUndefined()
+    expect(() => parseCatalog(catalog([place('one', 'Example Park', { coverage: 'county' })]))).toThrow(
+      /coverage must be one of core, nearby, outside/,
+    )
   })
 
   it('rejects a place whose sourceId has no matching source', () => {
