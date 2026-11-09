@@ -1,79 +1,79 @@
 {
- "version": "a869d3fd643dc57d",
- "generatedFrom": "2026-11-08T06:53:56.840Z",
+ "version": "821a16db06a4591d",
+ "generatedFrom": "2026-11-09T19:25:21.136Z",
  "artifacts": {
-  "catalog": "catalog.804ca278d9fb.json",
+  "catalog": "catalog.6d20eef821c5.json",
   "relationships": "relationships.e268eccfdd5c.json",
   "layers": {
-   "greenways": "layers/greenways.87e56a2d9f7f.geojson",
+   "greenways": "layers/greenways.d515ae3cb59f.geojson",
    "parks": "layers/parks.4aee84a0f2c8.geojson",
    "water": "layers/water.d6323db0f4b2.geojson"
   },
-  "places": "places/306b5eee8617/",
+  "places": "places/c6a3bbb4c2c5/",
   "collections": "collections.29bdbc829600.json"
  },
  "sources": [
   {
    "id": "cary-greenways",
    "recordCount": 46,
-   "retrievedAt": "2026-11-07T17:40:42.606Z",
+   "retrievedAt": "2026-11-09T19:25:07.196Z",
    "licence": "CC0 1.0",
    "licenceStatus": "declared",
-   "lastSuccess": "2026-11-07T17:40:42.606Z",
+   "lastSuccess": "2026-11-09T19:25:07.196Z",
    "ok": true
   },
   {
    "id": "cary-park-features",
    "recordCount": 0,
-   "retrievedAt": "2026-11-07T17:40:43.353Z",
+   "retrievedAt": "2026-11-09T19:25:07.530Z",
    "licence": "CC0 1.0",
    "licenceStatus": "declared",
-   "lastSuccess": "2026-11-07T17:40:43.353Z",
+   "lastSuccess": "2026-11-09T19:25:07.530Z",
    "ok": true
   },
   {
    "id": "cary-parks",
    "recordCount": 74,
-   "retrievedAt": "2026-11-07T17:40:39.429Z",
+   "retrievedAt": "2026-11-09T19:25:06.494Z",
    "licence": "CC0 1.0",
    "licenceStatus": "declared",
-   "lastSuccess": "2026-11-07T17:40:39.429Z",
+   "lastSuccess": "2026-11-09T19:25:06.494Z",
    "ok": true
   },
   {
    "id": "usgs-wbd-huc12",
    "recordCount": 57,
-   "retrievedAt": "2026-11-08T06:53:56.840Z",
+   "retrievedAt": "2026-11-09T19:25:21.136Z",
    "licence": "Public domain (USGS)",
    "licenceStatus": "declared",
-   "lastSuccess": "2026-11-08T06:53:56.840Z",
+   "lastSuccess": "2026-11-09T19:25:21.136Z",
    "ok": true
   },
   {
    "id": "wake-greenways",
    "recordCount": 73,
-   "retrievedAt": "2026-11-07T21:09:55.268Z",
+   "retrievedAt": "2026-11-09T19:25:10.933Z",
    "licence": "CC BY 4.0",
    "licenceStatus": "declared",
-   "lastSuccess": "2026-11-07T21:09:55.268Z",
+   "lastSuccess": "2026-11-09T19:25:10.933Z",
    "ok": true
   },
   {
    "id": "wake-park-entrances",
    "recordCount": 0,
-   "retrievedAt": "2026-11-07T17:40:09.979Z",
+   "retrievedAt": "2026-11-09T19:25:09.331Z",
    "licence": "CC BY 4.0",
    "licenceStatus": "declared",
-   "lastSuccess": "2026-11-07T17:40:09.979Z",
+   "lastSuccess": "2026-11-09T19:25:09.331Z",
    "ok": true
   },
   {
    "id": "wake-parks",
    "recordCount": 243,
-   "retrievedAt": "2026-11-07T17:40:46.521Z",
+   "retrievedAt": "2026-11-09T19:25:08.219Z",
    "licence": "CC BY 4.0",
    "licenceStatus": "declared",
-   "lastSuccess": "2026-11-07T17:40:46.521Z",
+   "lastSuccess": "2026-11-09T19:25:08.219Z",
    "ok": true
   }
  ]

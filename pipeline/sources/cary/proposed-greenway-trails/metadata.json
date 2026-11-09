@@ -221,9 +221,9 @@
   "dataset_uid": "da_vbkvub",
   "has_records": true,
   "features": [
-    "timeserie",
     "geo",
-    "analyze"
+    "analyze",
+    "timeserie"
   ],
   "attachments": [],
   "alternative_exports": [],
@@ -248,7 +248,7 @@
       "license": "CC0 1.0 Universal",
       "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
       "language": "en",
-      "modified": "2026-11-01T23:01:20+00:00",
+      "modified": "2026-11-08T23:01:02+00:00",
       "publisher": "Cary",
       "references": "https://maps-apis.carync.gov/server/rest/services/ParksRecreation/Parks/MapServer/2",
       "attributions": null,
@@ -284,7 +284,7 @@
         },
         "properties": {}
       },
-      "data_processed": "2026-11-01T23:01:20+00:00",
+      "data_processed": "2026-11-08T23:01:02+00:00",
       "federated": false,
       "geographic_reference": [
         "us_60_37183",
@@ -298,7 +298,7 @@
       "metadata_languages": [
         "en"
       ],
-      "metadata_processed": "2026-11-01T23:01:20.860000+00:00",
+      "metadata_processed": "2026-11-08T23:01:02.865000+00:00",
       "modified_updates_on_data_change": true,
       "modified_updates_on_metadata_change": true,
       "parent_domain": null,
