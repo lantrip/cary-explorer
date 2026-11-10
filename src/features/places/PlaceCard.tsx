@@ -19,6 +19,7 @@ import { CoverageLabel } from '../towns/CoverageLabel'
 import { ConnectedPlaces } from './ConnectedPlaces'
 import { ReleaseLine } from './ReleaseLine'
 import { useRelease } from './release'
+import { anySourceStale } from './freshness'
 import { hasProposedPart, useGeometryLayers } from '../map/layers'
 import { usePlaces } from './usePlaces'
 import { VisitInfo } from './VisitInfo'
@@ -32,6 +33,7 @@ export function PlaceCard({ place, onClose }: PlaceCardProps) {
   const theme = getTheme(place.theme)
   const { sources } = usePlaces()
   const release = useRelease()
+  const [viewTime] = useState(() => new Date())
   const proposedPart = hasProposedPart(useGeometryLayers().index.get(place.id))
   const userCoords = useLocationStore((s) => s.coords)
   const headingRef = useRef<HTMLHeadingElement>(null)
@@ -301,6 +303,9 @@ export function PlaceCard({ place, onClose }: PlaceCardProps) {
                 )
               })}
             </ul>
+            {release && anySourceStale(release.sources, place.sourceIds, viewTime) && (
+              <p className="text-xs text-ink-muted">Some source data is older than expected.</p>
+            )}
             <ReleaseLine release={release} />
           </section>
         </div>

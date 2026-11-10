@@ -71,6 +71,9 @@ interface AppState {
   dismissMissingPlace: () => void
   applyUrlState: (apply: UrlApply) => void
   setSelectedPlaceId: (id: string | null) => void
+  // Temporary pin from coordinate search; never a place, not in the URL, cleared when a place is selected.
+  droppedPin: { lat: number; lon: number } | null
+  setDroppedPin: (pin: { lat: number; lon: number } | null) => void
   setActiveThemes: (themes: ThemeId[]) => void
   toggleTheme: (id: ThemeId) => void
   setLayer: (id: LayerId, on: boolean) => void
@@ -90,6 +93,8 @@ interface AppState {
 
 export const useAppStore = create<AppState>()((set) => ({
   selectedPlaceId: null,
+  droppedPin: null,
+  setDroppedPin: (droppedPin) => set({ droppedPin }),
   activeThemes: THEMES.map((t) => t.id),
   layerOverrides: {},
   amenityFilters: [],
@@ -149,6 +154,7 @@ export const useAppStore = create<AppState>()((set) => ({
   setSelectedPlaceId: (id) =>
     set((s) => ({
       selectedPlaceId: id,
+      droppedPin: id !== null ? null : s.droppedPin,
       selectionOrigin: 'user' as SelectionOrigin,
       missingPlaceId: null,
       // Selecting a place re-opens a collapsed desktop panel so its card is visible.

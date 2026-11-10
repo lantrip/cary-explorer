@@ -349,16 +349,23 @@
   {
     "id": "wake-fire-stations",
     "publisher": "Wake County GIS",
-    "title": "Wake fire stations",
+    "title": "Fire stations in Wake County",
     "type": "arcgis",
     "url": "https://services1.arcgis.com/a7CWfuGP5ZnLYE7I/arcgis/rest/services/FireStations/FeatureServer/0",
-    "licence": "unknown",
-    "licenceStatus": "unclear",
-    "attribution": "Wake County GIS",
+    "licence": "CC-BY-4.0",
+    "licenceStatus": "open",
+    "attribution": "Wake County GIS (CC BY 4.0)",
     "cadence": "monthly",
-    "fields": [],
+    "fields": [
+      "OBJECTID",
+      "STATIONID",
+      "LABEL",
+      "LOCATION",
+      "CITY",
+      "AGENCY"
+    ],
     "dir": "wake/fire-stations",
-    "enabled": false
+    "enabled": true
   },
   {
     "id": "nc-hpo-resources",
@@ -889,5 +896,34 @@
     "dir": "usgs/wbd-huc6",
     "enabled": true,
     "geometry": false
+  },
+  {
+    "id": "usgs-3dhp-streams",
+    "publisher": "US Geological Survey",
+    "title": "USGS 3D Hydrography Program (3DHP) named stream channels (Wake County and buffer)",
+    "type": "arcgis",
+    "url": "https://hydro.nationalmap.gov/arcgis/rest/services/3DHP_all/MapServer/50",
+    "where": "gnisidlabel IS NOT NULL AND featuretypelabel = 'Channel Line'",
+    "licence": "Public domain (USGS: 'None. All data are open and non-proprietary')",
+    "licenceStatus": "open",
+    "attribution": "US Geological Survey, 3D Hydrography Program (public domain)",
+    "cadence": "monthly",
+    "fields": [
+      "id3dhp",
+      "gnisid",
+      "gnisidlabel",
+      "featuretypelabel",
+      "lengthkm",
+      "featuredate"
+    ],
+    "bbox": [
+      -79.09,
+      35.44,
+      -78.16,
+      36.15
+    ],
+    "dir": "usgs/3dhp-streams",
+    "enabled": true,
+    "geometryPrecision": 5
   }
 ]

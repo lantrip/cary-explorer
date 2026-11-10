@@ -188,7 +188,12 @@ describe('generated catalog', () => {
     for (const r of relationships) {
       expect(ids.has(r.from) && ids.has(r.to), JSON.stringify(r)).toBe(true)
       expect(['contained', 'nearby', 'curated']).toContain(r.kind)
-      if (r.kind === 'nearby') {
+      if (r.kind === 'nearby' && r.basis === 'along') {
+        // Trail follows a creek: at least 300 m, no straight-line distance.
+        expect(r.alongM, JSON.stringify(r)).toBeGreaterThanOrEqual(300)
+        expect(r.from.startsWith('creek-'), JSON.stringify(r)).toBe(false)
+        expect(r.to.startsWith('creek-'), JSON.stringify(r)).toBe(true)
+      } else if (r.kind === 'nearby') {
         expect(Number.isInteger(r.distanceM), JSON.stringify(r)).toBe(true)
         expect(['within-400m', 'nearest']).toContain(r.basis)
         expect(r.distanceM).toBeLessThanOrEqual(r.basis === 'nearest' ? 2000 : 400)

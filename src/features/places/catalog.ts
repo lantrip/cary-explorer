@@ -96,6 +96,10 @@ function parsePlace(
     return fail('stationNumber must be an integer >= 1')
   }
 
+  if (item.department !== undefined && !nonEmpty(item.department)) {
+    return fail('department must be a non-empty string')
+  }
+
   if (item.url !== undefined && !(nonEmpty(item.url) && item.url.startsWith('https://') && publicUrl(item.url))) {
     return fail('url must be an https URL')
   }
@@ -127,6 +131,7 @@ function parsePlace(
     description: item.description,
     address: item.address as string | undefined,
     stationNumber: item.stationNumber as number | undefined,
+    department: item.department as string | undefined,
     url: item.url as string | undefined,
     coverage: item.coverage as Place['coverage'],
     amenities: parseAmenities(item.amenities),

@@ -8,6 +8,8 @@ import { LAYER_IDS, emptyLayersText, resolveLayers, type LayerId } from '../them
 import { CATEGORY_THEME } from '../themes/themes'
 import { TOWNS } from '../towns/coverage'
 import type { CategoryId, Place, ThemeId } from '../../types/place'
+import { CoordinatePanel } from './CoordinatePanel'
+import { COORDINATE_ZOOM, formatPoint, parseCoordinates } from './coordinates'
 import { IntentConfirmation, NearPanel, type NearIntent } from './IntentPanels'
 import { intentLabel, parseIntent, planCategoryInTown, type Intent } from './intent'
 import { useLayerSearch } from './useLayerSearch'
@@ -19,7 +21,7 @@ const ALL_CATEGORIES = Object.keys(CATEGORY_THEME) as CategoryId[]
 /** What "Undo" puts back after a "category in town" intent. */
 interface AppliedTown {
   text: string
-  town: string
+  town: string | null
   prevTown: string | null
   prevThemes: ThemeId[]
   prevLayers: LayerId[]
@@ -45,6 +47,8 @@ export function SearchBox() {
     () => (query.trim() ? parseIntent(query, { towns: TOWNS, categories: ALL_CATEGORIES, places, search }) : null),
     [query, places, search],
   )
+  const point = useMemo(() => parseCoordinates(query), [query])
+  const pointText = point ? `Go to ${formatPoint(point)}` : null
   const intentText = intent ? intentLabel(intent, TOWNS, placesById) : null
   const [applied, setApplied] = useState<AppliedTown | null>(null)
   const [near, setNear] = useState<NearIntent | null>(null)
@@ -53,7 +57,8 @@ export function SearchBox() {
 
   const hasQuery = query.trim() !== ''
   // The suggested intent row is option 0 when the text parses; place results follow it.
-  const offset = intentText ? 1 : 0
+  // A parsed coordinate is always option 0 (a point text never parses as an intent, but stay safe).
+  const offset = pointText || intentText ? 1 : 0
   const total = results.length + offset
   const expanded = open && total > 0
   const noThemes = activeThemes.length === 0
@@ -84,12 +89,12 @@ export function SearchBox() {
     const plan = planCategoryInTown(it, state.activeThemes, state.layerOverrides)
     setApplied({
       text: `${label ?? 'Showing'}`.replace(/^Show /, 'Showing '),
-      town: plan.town,
+      town: plan.town ?? state.town,
       prevTown: state.town,
       prevThemes: state.activeThemes,
       prevLayers: resolveLayers(state.activeThemes, state.layerOverrides),
     })
-    state.setTown(plan.town)
+    if (plan.town !== null) state.setTown(plan.town)
     if (plan.themesChanged) state.setActiveThemes(plan.themes)
     for (const c of plan.layerChanges) state.setLayer(c.id, c.on)
   }
@@ -114,7 +119,19 @@ export function SearchBox() {
     setView('map')
   }
 
+  function goToPoint(p: { lat: number; lon: number }) {
+    const state = useAppStore.getState()
+    setSearchQuery('')
+    setOpen(false)
+    setNear(null)
+    setApplied(null)
+    state.setDroppedPin(p)
+    state.requestCamera([p.lon, p.lat], COORDINATE_ZOOM)
+    setView('map')
+  }
+
   function select(i: number) {
+    if (point && pointText && i === 0) return goToPoint(point)
     if (intent && intentText && i === 0) return applyIntent(intent)
     const place = results[i - offset]
     if (place) pickPlace(place)
@@ -137,12 +154,15 @@ export function SearchBox() {
       else {
         setSearchQuery('')
         setNear(null)
+        useAppStore.getState().setDroppedPin(null)
       }
     }
   }
 
   return (
-    <div className="relative">
+    <div>
+      {/* Only the input row is the positioning context, so the icon and dropdowns stay with the input. */}
+      <div className="relative">
       <label htmlFor={`${baseId}-input`} className="sr-only">
         Search places
       </label>
@@ -189,7 +209,7 @@ export function SearchBox() {
         hidden={!expanded}
         className="absolute inset-x-0 top-full z-30 mt-1.5 max-h-80 overflow-y-auto rounded-card border border-line bg-white p-1.5 shadow-[0_12px_32px_rgba(31,42,36,0.14)]"
       >
-        {intent && intentText && (
+        {(point ? pointText : intentText) && (
           <li
             id={optionId(0)}
             role="option"
@@ -200,7 +220,7 @@ export function SearchBox() {
               active === 0 ? 'bg-forest-tint' : ''
             }`}
           >
-            {intentText}
+            {point ? pointText : intentText}
           </li>
         )}
         {results.map((place, k) => {
@@ -233,7 +253,6 @@ export function SearchBox() {
           )
         })}
       </ul>
-      {applied && town === applied.town && <IntentConfirmation text={applied.text} onUndo={undoTown} />}
       {near && <NearPanel near={near} placesById={placesById} onPick={pickPlace} onClose={() => setNear(null)} />}
       {showEmpty && (
         <div className="absolute inset-x-0 top-full z-30 mt-1.5 space-y-2 rounded-card border border-line bg-white px-4 py-3 text-sm text-ink-muted shadow-[0_12px_32px_rgba(31,42,36,0.14)]">
@@ -258,6 +277,9 @@ export function SearchBox() {
               ? '1 result'
               : `${total} results`}
       </div>
+      </div>
+      <CoordinatePanel onPick={pickPlace} />
+      {applied && town === applied.town && <IntentConfirmation text={applied.text} onUndo={undoTown} />}
     </div>
   )
 }

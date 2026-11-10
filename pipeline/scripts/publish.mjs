@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { artifactPath } from '../lib/release.mjs'
 import { applyOverrides, loadOverrides } from '../lib/overrides.mjs'
 import { countBySource, validateRelease } from '../lib/validate.mjs'
+import { cadenceFields, registryEntry } from '../lib/health.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'))
@@ -43,6 +44,7 @@ export function publish({
   lastRunPath = join(ROOT, 'pipeline', '.last-run.json'),
   overridesPath = join(ROOT, 'pipeline', 'overrides.json'),
   allowStale = false,
+  registryPath = join(ROOT, 'pipeline', 'sources.config.json'),
   env = process.env,
 } = {}) {
   const errors = []
@@ -137,6 +139,12 @@ export function publish({
   const failed = new Map((lastRun?.sources ?? []).filter((s) => !s.ok).map((s) => [s.id, s]))
   const prevById = new Map((previousManifest?.sources ?? []).map((s) => [s.id, s]))
   const counts = countBySource(catalog)
+  let registry = []
+  try {
+    registry = readJson(registryPath)
+  } catch (e) {
+    warnings.push(`could not read source registry (${e.message}); manifest has no cadence fields`)
+  }
   const manifestSources = [...catalog.sources]
     .sort((a, b) => a.id.localeCompare(b.id))
     .map((s) => ({
@@ -147,6 +155,7 @@ export function publish({
       licenceStatus: s.licenceStatus ?? 'declared',
       lastSuccess: failed.has(s.id) ? (prevById.get(s.id)?.lastSuccess ?? s.retrievedAt) : s.retrievedAt,
       ok: !failed.has(s.id),
+      ...cadenceFields(registryEntry(registry, s.id)),
     }))
   const manifest = {
     version: hash.digest('hex').slice(0, 16),

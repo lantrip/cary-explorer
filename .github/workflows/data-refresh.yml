@@ -2,6 +2,11 @@ name: Data refresh
 
 on:
   workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: 'Fail a step on purpose to test the failure alert (opens or comments on the "Data refresh failed" issue)'
+        type: boolean
+        default: false
   schedule:
     # Mondays 09:00 UTC
     - cron: '0 9 * * 1'
@@ -17,6 +22,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
+      actions: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,6 +38,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Simulated failure (test only)
+        if: ${{ inputs.simulate_failure }}
+        run: |
+          echo "simulate_failure was set; failing on purpose to test the alert."
+          exit 1
 
       - name: Refresh data (snapshot, build, publish)
         run: npm run data:refresh
@@ -84,3 +97,26 @@ jobs:
           gh pr create --base dev --head "$BRANCH" \
             --title "Data refresh ${DATE}" \
             --body-file "$RUNNER_TEMP/pr-body.md"
+
+      - name: Alert the maintainer
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_ID: ${{ github.run_id }}
+          ALERT_TITLE: Data refresh failed
+          ALERT_BODY_FILE: ${{ runner.temp }}/alert.md
+        run: |
+          set -euo pipefail
+          FAILED="$(gh run view "$RUN_ID" --json jobs --jq '[.jobs[].steps[] | select(.conclusion == "failure") | .name] | join(", ")' || true)"
+          {
+            echo "The data refresh failed."
+            echo
+            echo "- Run: ${RUN_URL}"
+            echo "- Failed step: ${FAILED:-unknown (see the run)}"
+            echo '- Runbook: docs/runbook.md (section "A refresh failed")'
+            echo
+            echo "Nothing was published: the last good release is still live."
+          } > "$ALERT_BODY_FILE"
+          .github/scripts/alert.sh

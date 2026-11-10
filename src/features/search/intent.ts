@@ -1,4 +1,4 @@
-// Simple search intent: "<category> in <town>" and "<category> near <place>". Pure, rule-based, no AI and no guessing.
+// Simple search intent: "<category> in <town>", "<category> near <place>" and a bare "<category>" ("fire stations"). Pure, rule-based, no AI and no guessing.
 // Anything that does not match exactly returns null, so plain name search runs unchanged.
 //
 // Category words (singular or plural, case and punctuation ignored): park, trail (also greenway), history (also historic
@@ -19,6 +19,7 @@ import { createPlaceSearch, type PlaceSearch } from './searchIndex'
 export type Intent =
   | { kind: 'category-in-town'; categoryIds: CategoryId[]; townSlug: string }
   | { kind: 'category-near-place'; categoryIds: CategoryId[]; placeId: string }
+  | { kind: 'category'; categoryIds: CategoryId[] }
 
 export interface IntentContext {
   towns: readonly Town[]
@@ -113,8 +114,13 @@ function matchPlace(text: string, ctx: IntentContext): Place | null {
 }
 
 export function parseIntent(text: string, ctx: IntentContext): Intent | null {
-  const m = normalizeText(text).match(/^(.+?) (in|near) (.+)$/)
-  if (!m) return null
+  const normalized = normalizeText(text)
+  const m = normalized.match(/^(.+?) (in|near) (.+)$/)
+  if (!m) {
+    // A bare category phrase: shows that category everywhere, switching its layer on if it is off.
+    const bare = parseCategories(normalized, ctx.categories)
+    return bare ? { kind: 'category', categoryIds: bare } : null
+  }
   const categoryIds = parseCategories(m[1], ctx.categories)
   if (!categoryIds) return null
   if (m[2] === 'in') {
@@ -127,13 +133,14 @@ export function parseIntent(text: string, ctx: IntentContext): Intent | null {
 
 /** "parks", "parks and trails": the plural layer names, lowercase. */
 export function categoriesText(categoryIds: readonly CategoryId[]): string {
-  const names = categoryIds.map((id) => LAYER_LABEL[id].toLocaleLowerCase('en-US'))
+  const names = categoryIds.map((id) => (id === 'fire-station' ? 'fire stations' : LAYER_LABEL[id].toLocaleLowerCase('en-US')))
   return names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
 }
 
 /** "Show parks in Apex" / "Trails near Walnut Creek Trail"; null if the target no longer resolves. */
 export function intentLabel(intent: Intent, towns: readonly Town[], placesById: ReadonlyMap<string, Place>): string | null {
   const what = categoriesText(intent.categoryIds)
+  if (intent.kind === 'category') return `Show ${what}`
   if (intent.kind === 'category-in-town') {
     const town = towns.find((t) => t.slug === intent.townSlug)
     return town ? `Show ${what} in ${town.label}` : null
@@ -143,7 +150,8 @@ export function intentLabel(intent: Intent, towns: readonly Town[], placesById: 
 }
 
 export interface TownPlan {
-  town: string
+  /** The town to switch to; null for a bare category (the town stays as it is). */
+  town: string | null
   /** Exactly the themes of the requested categories. */
   themes: ThemeId[]
   themesChanged: boolean
@@ -153,7 +161,7 @@ export interface TownPlan {
 
 /** The setter arguments for "category in town": the town, the only themes to show, and the category layers to switch. */
 export function planCategoryInTown(
-  intent: Extract<Intent, { kind: 'category-in-town' }>,
+  intent: Extract<Intent, { kind: 'category-in-town' | 'category' }>,
   activeThemes: readonly ThemeId[],
   overrides: LayerOverrides,
 ): TownPlan {
@@ -169,7 +177,7 @@ export function planCategoryInTown(
     .filter((id): id is CategoryId => !isGeometryLayer(id))
     .map((id) => ({ id, on: intent.categoryIds.includes(id) }))
     .filter((c) => on.includes(c.id) !== c.on)
-  return { town: intent.townSlug, themes, themesChanged, layerChanges }
+  return { town: intent.kind === 'category-in-town' ? intent.townSlug : null, themes, themesChanged, layerChanges }
 }
 
 /** Connected places of the wanted categories, in `connectionsFor` order (contained, curated, then nearby, closest first). */

@@ -1,0 +1,19 @@
+{
+  "sourceId": "wake-fire-stations",
+  "url": "https://services1.arcgis.com/a7CWfuGP5ZnLYE7I/arcgis/rest/services/FireStations/FeatureServer/0",
+  "licence": "CC-BY-4.0",
+  "licenceStatus": "open",
+  "attribution": "Wake County GIS (CC BY 4.0)",
+  "retrievedAt": "2026-11-10T06:13:04.767Z",
+  "sourceModified": "2026-10-15T20:55:55.063Z",
+  "recordCount": 89,
+  "expectedCount": 89,
+  "fields": [
+    "OBJECTID",
+    "STATIONID",
+    "LABEL",
+    "LOCATION",
+    "CITY",
+    "AGENCY"
+  ]
+}

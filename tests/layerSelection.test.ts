@@ -13,6 +13,7 @@ import {
   layersHidingPlaces,
   normalizeOverrides,
   parseLayers,
+  LAYER_LABEL,
   reconcileOverrides,
   resolveLayers,
   serializeLayers,
@@ -116,6 +117,10 @@ describe('the filter selector', () => {
     const sel = resolveLayers(ALL, { trail: false })
     expect(filterByLayers(places, sel).map((p) => p.id)).toEqual(['a', 'c'])
   })
+  it('the Community services switch keeps the fire-station id in the URL', () => {
+    expect(LAYER_LABEL['fire-station']).toBe('Community services')
+    expect(parseLayers('fire-station')).toEqual({ 'fire-station': true })
+  })
   it('shows fire stations once switched on', () => {
     expect(filterByLayers(places, resolveLayers(ALL, {})).map((p) => p.id)).toEqual(['a', 'b', 'c'])
     expect(filterByLayers(places, resolveLayers(ALL, { 'fire-station': true })).map((p) => p.id)).toEqual(['a', 'b', 'c', 'd'])
@@ -151,7 +156,7 @@ describe('empty-state naming', () => {
     const sel = resolveLayers(ALL, { trail: false })
     const ids = layersHidingPlaces(hidden, ALL, sel)
     expect(ids).toEqual(['trail', 'fire-station'])
-    expect(emptyLayersText(ids)).toBe('Trails and Fire stations are switched off.')
+    expect(emptyLayersText(ids)).toBe('Trails and Community services are switched off.')
   })
   it('uses the singular and lists three or more', () => {
     expect(emptyLayersText(['trail'])).toBe('Trails is switched off.')

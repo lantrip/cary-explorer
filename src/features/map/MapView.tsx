@@ -155,6 +155,7 @@ export function MapView() {
   const areaSourceRef = useRef<VectorSource | null>(null)
   const selectedGeomSourceRef = useRef<VectorSource | null>(null)
   const youSourceRef = useRef<VectorSource | null>(null)
+  const pinSourceRef = useRef<VectorSource | null>(null)
   // What the camera last did for the selected place, and whether the user has panned or zoomed since.
   const framedRef = useRef<FramedState | null>(null)
   const movedRef = useRef(false)
@@ -207,6 +208,20 @@ export function MapView() {
       }),
     })
     youSourceRef.current = youSource
+    // Temporary pin from coordinate search: a separate layer, never a place and never pickable.
+    const pinSource = new VectorSource()
+    const pinLayer = new VectorLayer({
+      source: pinSource,
+      zIndex: LAYER_Z.selectedPin + 2,
+      style: new Style({
+        image: new CircleStyle({
+          radius: 8,
+          fill: new Fill({ color: '#c0392b' }),
+          stroke: new Stroke({ color: '#ffffff', width: 3 }),
+        }),
+      }),
+    })
+    pinSourceRef.current = pinSource
 
     const themeOf = (f: FeatureLike) => getTheme((f.get('theme') as ThemeId | undefined) ?? 'parks-trails').id
     const geometryStyle = (selected: boolean) => (f: FeatureLike) =>
@@ -269,7 +284,7 @@ export function MapView() {
         // to the card, so a pinch then zoomed the whole page. The app is full-screen and never scrolls, so the
         // map always takes wheel and pinch input under the pointer. Keyboard pan/zoom still need map focus.
         interactions: defaultInteractions({ onFocusOnly: false }),
-        layers: [createBasemapLayer(reportTileEvent), areaLayer, lineLayer, clusterLayer, selectedGeomLayer, selectedLayer, youLayer],
+        layers: [createBasemapLayer(reportTileEvent), areaLayer, lineLayer, clusterLayer, selectedGeomLayer, selectedLayer, youLayer, pinLayer],
         view: new View({
           center: fromLonLat(CARY_CENTER),
           zoom: 12,
@@ -426,6 +441,15 @@ export function MapView() {
     source.clear()
     if (userCoords) source.addFeature(new Feature({ geometry: new Point(fromLonLat(userCoords)) }))
   }, [userCoords])
+
+  // Show or clear the temporary coordinate pin.
+  const droppedPin = useAppStore((s) => s.droppedPin)
+  useEffect(() => {
+    const source = pinSourceRef.current
+    if (!source) return
+    source.clear()
+    if (droppedPin) source.addFeature(new Feature({ geometry: new Point(fromLonLat([droppedPin.lon, droppedPin.lat])) }))
+  }, [droppedPin])
 
   // Rebuild the point features when places, theme filters or the selection change (map is not recreated).
   // The selected place leaves the cluster source and is drawn from its own layer.

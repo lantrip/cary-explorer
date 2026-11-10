@@ -18,6 +18,10 @@ export interface ManifestSource {
   lastSuccess?: string
   /** False when the source failed in the latest refresh and an older snapshot was kept. */
   ok: boolean
+  /** Registry update cadence; absent in older manifests. */
+  cadence?: 'weekly' | 'monthly'
+  /** Cadence in days (7 or 31); with lastSuccess it lets the app judge staleness at view time. */
+  cadenceDays?: number
 }
 
 export interface Release {
@@ -65,6 +69,11 @@ function parseSources(raw: unknown): ManifestSource[] {
       licenceStatus: optString(item.licenceStatus),
       lastSuccess: optString(item.lastSuccess),
       ok: item.ok !== false,
+      cadence: item.cadence === 'weekly' || item.cadence === 'monthly' ? item.cadence : undefined,
+      cadenceDays:
+        typeof item.cadenceDays === 'number' && Number.isFinite(item.cadenceDays) && item.cadenceDays > 0
+          ? item.cadenceDays
+          : undefined,
     })
   }
   return out

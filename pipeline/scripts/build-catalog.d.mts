@@ -84,10 +84,21 @@ export function buildDetails(
   visitCtx: Map<string, Record<string, unknown>>,
   entrances: unknown[],
   aliasMap: Record<string, string[]>,
-  dates: { wake?: string; entrances?: string; caryFeatures?: string; greenways?: string; wakeGreenways?: string },
+  dates: { wake?: string; entrances?: string; caryFeatures?: string; greenways?: string; wakeGreenways?: string; fire?: string },
 ): Record<string, { id: string; fields: import('../lib/visit.mjs').VisitField[] }>
 export const WAKE_GREENWAY_SIMPLIFY_M: number
 export function lineLengthM(lines: Position[][]): number
+export function fireStationName(label: unknown): { name: string; stationNumber?: number } | undefined
+export interface FireStation {
+  stationId: string
+  name: string
+  stationNumber?: number
+  address?: string
+  agency?: string
+  pt: Position
+}
+export function groupFireStations(features: unknown[]): FireStation[]
+export function fireStationDescription(s: Pick<FireStation, 'address' | 'agency'>): string
 export function wakeGreenwayStatus(raw: unknown): 'existing' | 'proposed' | undefined
 export function wakeOwnerLabel(owner: unknown): string | undefined
 export function dominantSurface(segments: { surface?: unknown; lengthM: number }[]): string | undefined

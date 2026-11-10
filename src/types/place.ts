@@ -40,6 +40,8 @@ export interface Place {
   description: string
   address?: string
   stationNumber?: number
+  /** Operating fire department, only for departments the source names (e.g. "Cary Fire Department"). */
+  department?: string
   /** Official page for the place (e.g. its eBird hotspot page). */
   url?: string
   /** True = local dev preview data, never published. */

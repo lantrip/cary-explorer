@@ -19,7 +19,7 @@ Short names used in cells: **Wake parks** = Parks in Wake County (292 points, `J
 
 | Row | Parks & trails | History | Birds & wildlife | Water | Art & community |
 |---|---|---|---|---|---|
-| Cary | [Cary park points][cary-pts] (open) · [Cary greenways][cary-gw] (open) · [Cary park polygons][cary-poly] (unclear) · [Wake entrances][wake-ent] (open) | [NC HPO][hpo] (unclear). Cary has no own history layer | [eBird][ebird] (restricted, local only, #5) · [iNaturalist][inat] (open per record) | [Cary hydro][cary-hydro] (unclear) · [Cary stormwater][cary-storm] (open) · [Wake blue-line streams][wake-blue] (open) | [Cary public art][cary-art] (unclear) · [Cary facilities][cary-fac] (unclear) · [Wake fire stations][wake-fire] / [Cary fire][cary-fire] (unclear, counts disagree) |
+| Cary | [Cary park points][cary-pts] (open) · [Cary greenways][cary-gw] (open) · [Cary park polygons][cary-poly] (unclear) · [Wake entrances][wake-ent] (open) | [NC HPO][hpo] (unclear). Cary has no own history layer | [eBird][ebird] (restricted, local only, #5) · [iNaturalist][inat] (open per record) | [Cary hydro][cary-hydro] (unclear) · [Cary stormwater][cary-storm] (open) · [Wake blue-line streams][wake-blue] (open) | [Cary public art][cary-art] (unclear) · [Cary facilities][cary-fac] (unclear) · [Wake fire stations][wake-fire] (open, CC BY 4.0; used for the off-by-default Fire station layer) · [Cary fire][cary-fire] (no licence, not used) |
 | Apex | [Apex parks][apex-parks] (unclear) · [Apex greenways][apex-bp] (unclear) · [Wake parks][wake-parks] (open) · [Wake greenways][wake-gw] (open, imported) | [Apex National Register structures][apex-nr] (unclear) · [NC HPO][hpo] (unclear) | Birds, region-wide | [Wake water bodies][wake-water] (open) · [Wake blue-line streams][wake-blue] (open) | [Apex public art][apex-art] (unclear) · [Wake parks][wake-parks] flags (open) |
 | Morrisville | [Morrisville greenways][mv-gw] (unclear) · [Wake parks][wake-parks] (open) · [Wake greenways][wake-gw] (open, imported) | [NC HPO][hpo] (unclear). Town layer `gap` | Birds, region-wide | Wake water | [Wake parks][wake-parks] flags (open). Public art `gap` |
 | Raleigh | [Raleigh parks][ral-parks] (unclear) · [Raleigh greenway trails][ral-gw] (unclear) · [Wake parks][wake-parks] (open) · [Wake greenways][wake-gw] (open, imported) | [Raleigh cemetery markers][ral-cem] (unclear) · [NC HPO][hpo] (unclear) · historic overlay districts: not inspected (host unreachable) [^hod] | [Raleigh fauna points][ral-fauna] (unclear) · birds, region-wide | [Raleigh hydrology][ral-hydro] (unclear) · Wake water (open) | [Raleigh public art][ral-art] (unclear) · [Raleigh park centers][ral-ctr] (unclear) |
@@ -97,7 +97,7 @@ Duplicate and stale layers that lost to a better one are listed in section 4.
 | wake-water | [Water bodies][wake-water] | Wake County GIS | [REST][wake-water] | Polygon | 15,103 | 2020-05-07 | open (CC BY 4.0) | point-in-polygon |
 | wake-blue | [USGS blue-line streams][wake-blue] | Wake County GIS | [REST][wake-blue] | Line | 14,864 | 2026-10-28 | open (CC BY 4.0) | point-in-polygon |
 | wake-lib | [Libraries][wake-lib] | Wake County GIS | [REST][wake-lib] | Point | 23 | 2025 | unclear (item not verified) | point-in-polygon |
-| wake-fire | [Fire stations][wake-fire] | Wake County GIS | [REST][wake-fire] | Point | 89 (Cary 9) | recent | unclear (item not verified) | `CITY` field |
+| wake-fire | [Fire stations][wake-fire] | Wake County GIS | [REST][wake-fire] | Point | 89 (Cary 9) | 2026-10-15 | open (CC BY 4.0 in item `licenseInfo`; copyright text "Wake County GIS") | point-in-polygon (Census places); `CITY` is only the mailing city |
 | hpo | [NC HPO surveyed resources, layer 14][hpo] | NC Dept of Natural and Cultural Resources, HPO | [REST][hpo] | Point | Wake 8,976 / Chatham 888 / Durham 4,020 | monthly (2026-11-03 zip) | unclear (NC.gov disclaimer, no open licence) | `County` field, then point-in-polygon |
 | ebird | [eBird hotspots][ebird] | Cornell Lab of Ornithology | [API][ebird] | Point | Wake 196 / Chatham 63 / Durham 94 | snapshot 2026-11-07 | restricted (non-commercial API terms, key required; see [ebird.md](ebird.md)) | point-in-polygon |
 | inat | [iNaturalist observations][inat] | iNaturalist | [API][inat] | Point | Wake 380,754 research-grade (341,608 with open geoprivacy) | live | open per record only (`license` field; obscured points excluded) | point-in-polygon |
@@ -109,7 +109,7 @@ Duplicate and stale layers that lost to a better one are listed in section 4.
 | cary-hydro | [Cary NaturalResources/Hydro][cary-hydro] | Town of Cary | [REST][cary-hydro] | Line / polygon | Wake creeks 96,107; Chatham creeks 6,094 | not stated | unclear (no licence stated) | separate Wake and Chatham layers |
 | cary-storm | [Cary stormwater network (channel)][cary-storm] | Town of Cary | [dataset][cary-storm] | not inspected | Channel 24,229 | 2026-11-07 | open (CC0) | whole layer is Cary. Infrastructure, not streams |
 | cary-fac | [Cary facilities][cary-fac] | Town of Cary | [REST][cary-fac] | Polygon / point | 98 sites, 89 points | not stated | unclear | whole layer is Cary |
-| cary-fire | [Cary fire service operations][cary-fire] | Town of Cary | [REST][cary-fire] | Point | 25 | `LASTUPDATE` field | unclear (none stated) | whole layer is Cary |
+| cary-fire | [Cary fire service operations][cary-fire] | Town of Cary | [REST][cary-fire] | Point | 25 | `LASTUPDATE` field | not used, no licence | whole layer is Cary |
 | apex-parks | [Parks in Apex, NC][apex-parks] | Town of Apex | [REST][apex-parks] | Polygon | 19 | 2024-09-12 | unclear (GIS disclaimer) | whole layer is Apex |
 | apex-bp | [Apex greenways and pedestrian paths][apex-bp] | Town of Apex | [REST][apex-bp] | Line | 847 | 2026-10-07 | unclear (GIS disclaimer) | whole layer is Apex |
 | apex-nr | [Apex National Register structures][apex-nr] | Town of Apex | [REST][apex-nr] | Polygon | 176 | 2026-08-18 | unclear (GIS disclaimer) | whole layer is Apex |
@@ -166,7 +166,7 @@ Known overlaps:
 
 **New Hope Church Road Trailhead Park.** Cary lists it as an "Existing Park" (CC0). Chatham GIS lists a Chatham-owned trailhead at 2575 New Hope Church Rd, Cary, in the Chatham part. Ownership conflicts. Until Cary and Chatham GIS answer, use the Cary record for name and attributes, do not use Chatham geometry, and note the conflict in the entry.
 
-**Fire-station counts.** Wake's layer has 9 stations in Cary. Cary's own layer reports 25 features. We do not know which is current or what the extra 16 are (other agencies, non-station sites, or duplicates). Check both `AGENCY` and `LASTUPDATE` fields before using either. Neither is a core theme layer.
+**Fire-station counts (resolved).** Cary's own layer reports 25 features: 9 Cary stations, 1 administrative site, 6 proposed stations and 9 Apex or Morrisville stations. Wake's 9 Cary-labelled stations match Cary's 9 one-to-one. Cary's layer has no licence and is not used; the catalog takes fire stations from Wake's layer (89 records, CC BY 4.0), one place per `STATIONID` (the `ID` field has duplicates and nulls). See decision 32.
 
 ## 5. Cary's Chatham and Durham parts
 
@@ -232,7 +232,7 @@ Ask these publishers about reuse terms, most valuable first:
 6. **Town of Apex** (parks, greenways 847, public art 31, National Register structures 176).
 7. **Holly Springs, Wake Forest, Rolesville, Garner, Morrisville** (trails and, for Wake Forest and Holly Springs, history). Small towns, one email each.
 8. **City of Durham GIS** (Bike & Hike services have no licence string; needed for Morrisville's and Raleigh's Durham parts).
-9. **Wake County GIS**: confirm CC BY 4.0 on the fire-station, library and watershed items (item licence not individually verified) (the Wake Greenways item is now confirmed CC BY 4.0, see section 9).
+9. **Wake County GIS**: confirm CC BY 4.0 on the library and watershed items (item licence not individually verified) (the Wake Greenways and fire-station items are confirmed CC BY 4.0, see section 9 and decision 32).
 10. **NC DWR / NCDCR gis2 / NC OneMap** (basins, markers, town limits): no copyright text or unconfirmed redistribution terms.
 
 ## 9. Regional trail sources checked for #67
@@ -338,4 +338,15 @@ How the import works: `maps.wake.gov` still times out from this network, so the 
 | Status | WBD is no longer maintained; USGS 3DHP is the successor for hydrography. We use WBD because it has a ready HUC-12 layer we could snapshot with a count check (service data loaded 2024-08); 3DHP was not evaluated, so check its coverage at the next refresh |
 | Snapshot | `pipeline/sources/usgs/wbd-huc12/` (5-decimal geometry), `wbd-huc8/` and `wbd-huc6/` (names only), bbox -79.09,35.44,-78.16,36.15, count checked against the service count |
 | Basins | Neuse, Cape Fear and Pamlico (the Tar-Pamlico basin) |
-| Not used | The `tohuc` flow field is not snapshotted, so no flow or downstream claim can be made (#28). Creek places, a tap-a-point lookup and the Neuse / Cape Fear story text with Cary citations are still open on #22 |
+| Not used | The `tohuc` flow field is not snapshotted, so no flow or downstream claim can be made (#28). A tap-a-point lookup and the Neuse / Cape Fear story text with Cary citations are still open on #22 |
+
+### Named streams (3DHP flowlines, #22)
+
+| Item | Value |
+|------|-------|
+| Service | https://hydro.nationalmap.gov/arcgis/rest/services/3DHP_all/MapServer/50 (Flowline). Same bbox as above: 31,797 flowlines, 6,051 with a GNIS name, 4,231 named `Channel Line` features snapshotted (waterbody and surface connectors left out) |
+| Licence | The service's own text says: "Use Constraints: None. All data are open and non-proprietary." Registry licence: "Public domain (USGS)"; credit USGS |
+| Choice | 3DHP (the maintained successor) over the legacy NHD flowline layer (`nhd/MapServer/6`, which carries the same text and the same counts in our box). Fields kept: `id3dhp`, `gnisid`, `gnisidlabel`, `featuretypelabel`, `lengthkm`, `featuredate`; the network, level-path and flow-direction fields are not snapshotted |
+| Snapshot | `pipeline/sources/usgs/3dhp-streams/`, 5-decimal geometry, count checked against the service; query `gnisidlabel IS NOT NULL AND featuretypelabel = 'Channel Line'` |
+| Use | 172 creek `water` places (of 296 name groups: 76 under about a mile and 48 with no ground in Wake, Chatham or Durham dropped); lines in `layers/water`. Rule and links in decision 30 |
+| Known limits | A stream broken by a lake or a gap over 200 m appears as several places of one name. The name is the USGS (GNIS) name: Cary's Black Creek Greenway runs beside the stream USGS calls Coles Branch |

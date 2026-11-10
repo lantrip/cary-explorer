@@ -270,6 +270,6 @@ describe('built regional trails', () => {
 
   it('does not turn Wake park entrances into places', () => {
     expect(places.some((p) => p.sourceIds.includes('wake-park-entrances'))).toBe(false)
-    expect(places.every((p) => p.id.startsWith('cary-') || p.id.startsWith('wake-park-') || p.id.startsWith('wake-greenway-') || p.id.startsWith('watershed-'))).toBe(true)
+    expect(places.every((p) => p.id.startsWith('cary-') || p.id.startsWith('wake-park-') || p.id.startsWith('wake-greenway-') || p.id.startsWith('wake-fire-') || p.id.startsWith('watershed-') || p.id.startsWith('creek-'))).toBe(true)
   })
 })

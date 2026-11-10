@@ -1,15 +1,15 @@
 {
- "version": "a869d3fd643dc57d",
- "generatedFrom": "2026-11-08T06:53:56.840Z",
+ "version": "542e36ebd2e45cbf",
+ "generatedFrom": "2026-11-10T06:13:04.767Z",
  "artifacts": {
-  "catalog": "catalog.804ca278d9fb.json",
-  "relationships": "relationships.e268eccfdd5c.json",
+  "catalog": "catalog.ed0f0dd99c91.json",
+  "relationships": "relationships.dda84234074c.json",
   "layers": {
    "greenways": "layers/greenways.87e56a2d9f7f.geojson",
    "parks": "layers/parks.4aee84a0f2c8.geojson",
-   "water": "layers/water.d6323db0f4b2.geojson"
+   "water": "layers/water.acb6378cc0b1.geojson"
   },
-  "places": "places/306b5eee8617/",
+  "places": "places/d899639f7a82/",
   "collections": "collections.29bdbc829600.json"
  },
  "sources": [
@@ -20,7 +20,9 @@
    "licence": "CC0 1.0",
    "licenceStatus": "declared",
    "lastSuccess": "2026-11-07T17:40:42.606Z",
-   "ok": true
+   "ok": true,
+   "cadence": "weekly",
+   "cadenceDays": 7
   },
   {
    "id": "cary-park-features",
@@ -29,7 +31,9 @@
    "licence": "CC0 1.0",
    "licenceStatus": "declared",
    "lastSuccess": "2026-11-07T17:40:43.353Z",
-   "ok": true
+   "ok": true,
+   "cadence": "weekly",
+   "cadenceDays": 7
   },
   {
    "id": "cary-parks",
@@ -38,7 +42,20 @@
    "licence": "CC0 1.0",
    "licenceStatus": "declared",
    "lastSuccess": "2026-11-07T17:40:39.429Z",
-   "ok": true
+   "ok": true,
+   "cadence": "weekly",
+   "cadenceDays": 7
+  },
+  {
+   "id": "usgs-3dhp-streams",
+   "recordCount": 172,
+   "retrievedAt": "2026-11-08T15:40:24.853Z",
+   "licence": "Public domain (USGS)",
+   "licenceStatus": "declared",
+   "lastSuccess": "2026-11-08T15:40:24.853Z",
+   "ok": true,
+   "cadence": "monthly",
+   "cadenceDays": 31
   },
   {
    "id": "usgs-wbd-huc12",
@@ -47,7 +64,20 @@
    "licence": "Public domain (USGS)",
    "licenceStatus": "declared",
    "lastSuccess": "2026-11-08T06:53:56.840Z",
-   "ok": true
+   "ok": true,
+   "cadence": "monthly",
+   "cadenceDays": 31
+  },
+  {
+   "id": "wake-fire-stations",
+   "recordCount": 89,
+   "retrievedAt": "2026-11-10T06:13:04.767Z",
+   "licence": "CC BY 4.0",
+   "licenceStatus": "declared",
+   "lastSuccess": "2026-11-10T06:13:04.767Z",
+   "ok": true,
+   "cadence": "monthly",
+   "cadenceDays": 31
   },
   {
    "id": "wake-greenways",
@@ -56,7 +86,9 @@
    "licence": "CC BY 4.0",
    "licenceStatus": "declared",
    "lastSuccess": "2026-11-07T21:09:55.268Z",
-   "ok": true
+   "ok": true,
+   "cadence": "monthly",
+   "cadenceDays": 31
   },
   {
    "id": "wake-park-entrances",
@@ -65,7 +97,9 @@
    "licence": "CC BY 4.0",
    "licenceStatus": "declared",
    "lastSuccess": "2026-11-07T17:40:09.979Z",
-   "ok": true
+   "ok": true,
+   "cadence": "monthly",
+   "cadenceDays": 31
   },
   {
    "id": "wake-parks",
@@ -74,7 +108,9 @@
    "licence": "CC BY 4.0",
    "licenceStatus": "declared",
    "lastSuccess": "2026-11-07T17:40:46.521Z",
-   "ok": true
+   "ok": true,
+   "cadence": "monthly",
+   "cadenceDays": 31
   }
  ]
 }

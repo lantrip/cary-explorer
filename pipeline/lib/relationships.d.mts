@@ -15,8 +15,11 @@ export interface Relationship {
   to: string
   kind: 'contained' | 'nearby' | 'curated'
   distanceM?: number
-  basis?: 'within-400m' | 'nearest' | 'watershed'
+  basis?: 'within-400m' | 'nearest' | 'watershed' | 'along'
+  /** Trail-to-creek `along` links only: metres of the trail within 50 m of the creek (rounded to 10 m). */
+  alongM?: number
   /** Trail-to-watershed links only, when the trail crosses several watersheds: the share (0-1) of its length in this one. */
   share?: number
 }
+export function computeStationLinks(parks: RelationshipItem[], stations: { id: string; point: Position }[]): Relationship[]
 export function computeRelationships(items: RelationshipItem[]): { relationships: Relationship[] }

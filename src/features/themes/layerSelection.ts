@@ -35,7 +35,7 @@ export const LAYER_LABEL: Record<LayerId, string> = {
   water: 'Water',
   art: 'Art',
   community: 'Community',
-  'fire-station': 'Fire stations',
+  'fire-station': 'Community services',
 }
 
 export const LAYER_THEME: Record<LayerId, ThemeId> = {
@@ -47,7 +47,8 @@ export const LAYER_THEME: Record<LayerId, ThemeId> = {
 /**
  * Layers on by default per theme. Rule: every category that has (or will have) places is on, except:
  * - `proposed-trails`: dashed segments of greenways that are not built yet; they would read as walkable trails.
- * - `fire-station`: utilities, not places to visit; many pins that crowd out parks and art. Switch it on under "Layers".
+ * - `fire-station`: off by default to keep the first view on places to visit (89 county-wide pins would crowd out parks and art).
+ *   It is the "Community services" filter under Art & community; a search for fire stations switches it on.
  * `park-outlines` is on. The catalog today holds only parks (309), trails (46) and community places (8); history, wildlife,
  * water and art have no places yet and are on so that they show as soon as data arrives.
  */

@@ -12,6 +12,7 @@ Run from the repo root with Node 22 or later.
 | `npm run data:build` | Runs `build-catalog.mjs` (`--out <dir>` to choose the output folder). Writes the catalog, layers, `relationships.json` and coverage classes (core, nearby, outside). |
 | `npm run data:publish` | Applies `pipeline/overrides.json`, runs the validation gates, then writes hashed artifacts into `public/data`, writes `manifest.json` last and prunes old files (see Publish below). |
 | `npm run check:budgets` | Gzips every artifact listed in the manifest (and `dist/assets/*.js` when `dist/` exists), compares with `pipeline/budgets.json` and exits 1 if anything is over. |
+| `npm run check:freshness` | Reads `public/data/manifest.json`, prints each source's age and fresh/due/stale status, exits 1 if any source is stale (`--now <date>` and `--manifest <file>` are optional). See `docs/runbook.md`. |
 | `npm run data:refresh` | Runs snapshot, build and publish in order. Output goes to `pipeline/.staging/` until publish. |
 
 The same output comes from the same snapshots, so a re-run on unchanged snapshots changes nothing.
@@ -77,7 +78,7 @@ Every feature in `layers/greenways.<h>.geojson` has `{ placeId, status, outsideC
 
 ## Manifest
 
-`public/data/manifest.json` records the release version, what it was built from, an `artifacts` block (`catalog`, `relationships`, `layers`, `places` paths relative to `public/data/`), and for each source: record count, `retrievedAt`, licence, licence status, last successful refresh and `ok`. The browser can show source health from it.
+`public/data/manifest.json` records the release version, what it was built from, an `artifacts` block (`catalog`, `relationships`, `layers`, `places` paths relative to `public/data/`), and for each source: record count, `retrievedAt`, licence, licence status, last successful refresh and `ok`. Each source also has `cadence` and `cadenceDays` (from the registry; 7 weekly, 31 monthly) so staleness is worked out at view time from `lastSuccess`, never at publish. Older manifests without them still load and are never reported stale.
 
 ## Weekly workflow
 
@@ -88,3 +89,7 @@ Every feature in `layers/greenways.<h>.geojson` has `{ placeId, status, outsideC
 1. Add an entry to `pipeline/sources.config.json` with `licenceStatus: "open"`, the licence and attribution text, a `fields` allowlist that contains only the public fields you need, and `enabled: true`.
 2. Run `npm run data:snapshot` and check `pipeline/.last-run.json`.
 3. Run `npm run data:refresh` and review the diff and the manifest before merging.
+
+## Runbook and alerts
+
+Failed scheduled runs open (or comment on) a GitHub issue titled "Data refresh failed", and a weekly freshness check does the same for stale sources. What to do about either, how to test the alert, and who owns hosting and transfer cost is in [`docs/runbook.md`](../docs/runbook.md).

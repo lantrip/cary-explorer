@@ -1,0 +1,19 @@
+{
+  "sourceId": "usgs-3dhp-streams",
+  "url": "https://hydro.nationalmap.gov/arcgis/rest/services/3DHP_all/MapServer/50",
+  "licence": "Public domain (USGS: 'None. All data are open and non-proprietary')",
+  "licenceStatus": "open",
+  "attribution": "US Geological Survey, 3D Hydrography Program (public domain)",
+  "retrievedAt": "2026-11-08T15:40:24.853Z",
+  "sourceModified": null,
+  "recordCount": 4231,
+  "expectedCount": 4231,
+  "fields": [
+    "id3dhp",
+    "gnisid",
+    "gnisidlabel",
+    "featuretypelabel",
+    "lengthkm",
+    "featuredate"
+  ]
+}

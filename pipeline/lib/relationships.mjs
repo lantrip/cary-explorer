@@ -136,3 +136,29 @@ export function computeRelationships(items) {
   out.sort((x, y) => cmp(x.from, y.from) || cmp(x.to, y.to) || cmp(x.kind, y.kind))
   return { relationships: out }
 }
+
+/**
+ * Park-to-fire-station links: each park gets ONE `nearby` link (basis 'nearest') to its closest fire station within
+ * NEAREST_MAX_M (2,000 m); none when no station is that close. from = the park, to = the station. distanceM is the
+ * straight-line distance in whole metres from the park's closest vertex to the station point (0 when the station
+ * point lies inside the park). It says how near, nothing about service areas or response.
+ * parks: RelationshipItem[] (kind 'park'); stations: { id, point: Position }[]. Ties go to the lower station id.
+ */
+export function computeStationLinks(parks, stations) {
+  const out = []
+  for (const item of parks) {
+    const park = prep(item)
+    if (!park.vertices.length) continue
+    const wide = grow(park.bbox, NEAREST_MAX_M)
+    let best = null
+    for (const st of stations) {
+      if (!inBox(st.point, wide)) continue
+      let d = insideAny(st.point, park) ? 0 : Infinity
+      if (d !== 0) for (const v of park.vertices) d = Math.min(d, haversineM(v, st.point))
+      if (d > NEAREST_MAX_M) continue
+      if (!best || d < best.d || (d === best.d && st.id < best.id)) best = { d, id: st.id }
+    }
+    if (best) out.push({ from: park.id, to: best.id, kind: 'nearby', distanceM: Math.round(best.d), basis: 'nearest' })
+  }
+  return out.sort((x, y) => cmp(x.from, y.from) || cmp(x.to, y.to))
+}

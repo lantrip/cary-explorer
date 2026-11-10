@@ -24,11 +24,12 @@ export function describeWakeSurface(segments: Props[]): string | undefined
 export function describeWakeAccessibility(segments: Props[]): string | undefined
 export function buildVisitFields(ctx?: {
   wake?: Props
+  fire?: { address?: string }
   caryPoints?: Props[]
   entrances?: Props[]
   segments?: Props[]
   wakeSegments?: Props[]
-  dates?: { wake?: string; entrances?: string; caryFeatures?: string; greenways?: string; wakeGreenways?: string }
+  dates?: { wake?: string; entrances?: string; caryFeatures?: string; greenways?: string; wakeGreenways?: string; fire?: string }
 }): VisitField[]
 export function validateDetail(detail: unknown, placeId: string, sourceIds?: Set<string>): string[]
 export const AMENITY_KEYS: VisitKey[]

@@ -14,6 +14,7 @@
     "data:publish": "node pipeline/scripts/publish.mjs",
     "data:refresh": "node pipeline/scripts/refresh.mjs",
     "check:budgets": "node pipeline/scripts/check-budgets.mjs",
+    "check:freshness": "node pipeline/scripts/check-freshness.mjs",
     "typecheck": "tsc -b && tsc -p tsconfig.test.json"
   },
   "engines": {

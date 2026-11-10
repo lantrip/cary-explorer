@@ -90,7 +90,7 @@ describe('parseIntent: category in town', () => {
     expect(parseIntent('trails in Cary', { ...ctx, categories: ['park'] })).toBeNull()
   })
   it('returns null for plain names and other text', () => {
-    for (const t of ['', 'Bond Park', 'parks', 'in Apex', 'parks Apex']) expect(parseIntent(t, ctx)).toBeNull()
+    for (const t of ['', 'Bond Park', 'in Apex', 'parks Apex']) expect(parseIntent(t, ctx)).toBeNull()
   })
 })
 
@@ -171,6 +171,22 @@ describe('planCategoryInTown', () => {
     const plan = planCategoryInTown(townIntent(['fire-station'], 'cary'), all, {})
     expect(plan.themes).toEqual(['art-community'])
     expect(visible(plan, all, {})).toEqual(['fire-station'])
+  })
+  it('a bare "fire stations" / "firehouse" query is a category intent that turns the off-by-default layer on', () => {
+    for (const q of ['fire stations', 'Fire station', 'firehouse', 'show me firehouses']) {
+      expect(parseIntent(q, ctx)).toEqual({ kind: 'category', categoryIds: ['fire-station'] })
+    }
+    const intent = parseIntent('fire stations', ctx) as Extract<Intent, { kind: 'category' }>
+    expect(intentLabel(intent, TOWNS, byId)).toBe('Show fire stations')
+    const plan = planCategoryInTown(intent, all, {})
+    expect(plan.town).toBeNull()
+    expect(plan.themes).toEqual(['art-community'])
+    expect(visible(plan, all, {})).toEqual(['fire-station'])
+  })
+  it('"fire station in Cary" labels as fire stations, not the layer name', () => {
+    const intent = parseIntent('fire station in Cary', ctx) as TownIntent
+    expect(intentLabel(intent, TOWNS, byId)).toBe('Show fire stations in Cary')
+    expect(visible(planCategoryInTown(intent, all, {}), all, {})).toEqual(['fire-station'])
   })
   it('leaves geometry layers alone', () => {
     const plan = planCategoryInTown(townIntent(['park'], 'apex'), all, {})

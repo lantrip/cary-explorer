@@ -20,8 +20,9 @@ import {
   simplifyLine,
   splitByCore,
 } from '../lib/geo.mjs'
-import { computeRelationships } from '../lib/relationships.mjs'
+import { computeRelationships, computeStationLinks } from '../lib/relationships.mjs'
 import { buildCollections } from '../lib/collections.mjs'
+import { CREEK_MIN_M, creekDescription, creekPin, creekRelationships, groupCreeks, simplifyCreekLines } from '../lib/creeks.mjs'
 import { intersectsScope, mapWatersheds, prepareWatershed, representativePoint, simplifyPolygons, watershedDescription, watershedRelationships } from '../lib/watersheds.mjs'
 import { amenitiesOf, buildVisitFields, verifiedDate } from '../lib/visit.mjs'
 
@@ -331,6 +332,60 @@ export function greenwayFeatures(placeId, existingLines, proposedLinesRaw, scope
   return out
 }
 
+// ---------- Wake County fire stations (issue #27) ----------
+
+/** What the AGENCY code is known to mean. Only CF and RF map 1:1 to the station labels ("Cary #n", "RFD #n"); FD covers many departments, so it says nothing. */
+export const FIRE_AGENCY = { CF: 'Cary Fire Department', RF: 'Raleigh Fire Department' }
+/**
+ * Official department pages, shown as the card's "Website" link. Checked 2026-11-10 with curl (plain GET, redirects followed):
+ * raleighnc.gov/fire returns HTTP 200 on the town's own .gov domain. The Town of Cary site (carync.gov) answered HTTP 403 to
+ * every plain request, so no Cary page could be confirmed and Cary stations carry no website. Never guess a URL.
+ */
+export const FIRE_DEPARTMENT_URL = { 'Raleigh Fire Department': 'https://raleighnc.gov/fire' }
+/** LABEL prefixes that are abbreviations. "RFD" is the Raleigh Fire Department (AGENCY RF on every such station). */
+const FIRE_LABEL_PREFIX = { RFD: 'Raleigh' }
+
+/**
+ * Name and number from a Wake FireStations LABEL (never invents a number):
+ *  - "<prefix> #N"            -> "<prefix> Fire Station N" with stationNumber N ("Cary #1" -> "Cary Fire Station 1"; "RFD #5" -> "Raleigh Fire Station 5")
+ *  - a label that already says "Fire" -> kept as written ("Durham Fire 17")
+ *  - any other label (no number) -> "<label> Fire Station" ("Hopkins" -> "Hopkins Fire Station")
+ * Returns undefined for an empty label.
+ */
+export function fireStationName(label) {
+  const clean = typeof label === 'string' ? label.trim().replace(/\s+/g, ' ') : ''
+  if (!clean) return undefined
+  const m = /^(.*?)\s*#\s*(\d+)$/.exec(clean)
+  if (m && m[1]) {
+    const prefix = FIRE_LABEL_PREFIX[m[1]] ?? m[1]
+    return { name: `${prefix} Fire Station ${Number(m[2])}`, stationNumber: Number(m[2]) }
+  }
+  return { name: /\bfire\b/i.test(clean) ? clean : `${clean} Fire Station` }
+}
+
+/** Fire stations from the Wake layer: one per STATIONID (ID has duplicates and nulls; the first record by OBJECTID wins), with a name, a LOCATION and a point. */
+export function groupFireStations(features) {
+  const seen = new Set()
+  const out = []
+  for (const f of features) {
+    const p = f.properties ?? {}
+    const stationId = typeof p.STATIONID === 'string' ? p.STATIONID.trim() : ''
+    const named = fireStationName(p.LABEL)
+    const pt = f.geometry?.coordinates
+    if (!stationId || !named || !Array.isArray(pt) || seen.has(stationId.toLowerCase())) continue
+    seen.add(stationId.toLowerCase())
+    const location = typeof p.LOCATION === 'string' ? p.LOCATION.trim().replace(/\s+/g, ' ') : ''
+    const city = typeof p.CITY === 'string' ? p.CITY.trim() : ''
+    out.push({ stationId, ...named, address: location ? (city ? `${location}, ${city}` : location) : undefined, agency: FIRE_AGENCY[String(p.AGENCY ?? '').trim()], pt })
+  }
+  return out
+}
+
+/** Card text from the data only: operator when the AGENCY code is known, the address, and the source. No service area, no response times. */
+export function fireStationDescription(s) {
+  return `Fire station${s.agency ? ` operated by ${s.agency}` : ''}${s.address ? `, at ${s.address}` : ''} (from Wake County's fire stations layer).`
+}
+
 // ---------- Wake County greenways (regional trails outside Cary) ----------
 
 /** Layer simplification for regional trails, in metres. Cary's own greenways are not simplified. */
@@ -476,6 +531,8 @@ export function build({ write = true, outDir = OUT } = {}) {
   const wakeMeta = readJson(join(SRC, 'wake', 'parks', 'meta.json'))
   const wakeGreenData = readJson(join(SRC, 'wake', 'greenways', 'data.geojson'))
   const wakeGreenMeta = readJson(join(SRC, 'wake', 'greenways', 'meta.json'))
+  const fireData = readJson(join(SRC, 'wake', 'fire-stations', 'data.geojson'))
+  const fireMeta = readJson(join(SRC, 'wake', 'fire-stations', 'meta.json'))
   const entrancesData = readJson(join(SRC, 'wake', 'park-entrances', 'data.geojson'))
   const entrancesMeta = readJson(join(SRC, 'wake', 'park-entrances', 'meta.json'))
   const featuresMeta = readJson(join(cary('parks-and-recreation-feature-map'), 'meta.json'))
@@ -668,6 +725,36 @@ export function build({ write = true, outDir = OUT } = {}) {
     relItems.push({ id: place.id, kind: 'park', points: [place.centroid] })
   }
 
+  // Wake County fire stations (decision 32): points inside the core or nearby area become `fire-station` places.
+  // They are not relationship items (they never join the park/trail nearby rules); parks link to their nearest station
+  // separately, through computeStationLinks.
+  const fireStations = groupFireStations(fireData.features).filter((s) => classify(s.pt, scope) !== 'outside')
+  allIds = assignIds(allIds, fireStations.map((s) => ({ key: `wake-fire-stations:${s.stationId.toLowerCase()}`, prefix: 'wake-fire', name: s.stationId })))
+  for (const s of fireStations) {
+    const pt = roundPos(s.pt, COORD_DECIMALS)
+    const county = countyOf(pt, counties) ?? 'Wake'
+    const place = {
+      id: allIds[`wake-fire-stations:${s.stationId.toLowerCase()}`],
+      name: s.name,
+      aliases: [],
+      category: 'fire-station',
+      municipality: municipalityOf(pt, towns, county),
+      county,
+      coverage: classify(s.pt, scope),
+      centroid: pt,
+      description: fireStationDescription(s),
+      sourceIds: ['wake-fire-stations'],
+    }
+    if (s.address) place.address = s.address
+    if (s.stationNumber !== undefined) place.stationNumber = s.stationNumber
+    if (s.agency) {
+      place.department = s.agency
+      if (FIRE_DEPARTMENT_URL[s.agency]) place.url = FIRE_DEPARTMENT_URL[s.agency]
+    }
+    places.push(place)
+    visitCtx.set(place.id, { fire: { address: s.address } })
+  }
+
   // Wake County greenways outside Cary: named systems become trail places, lines go to the greenways layer.
   const wakeGw = groupWakeGreenways(wakeGreenData.features)
   const trailCandidates = places.map((p) => ({
@@ -761,12 +848,70 @@ export function build({ write = true, outDir = OUT } = {}) {
       geometry: { type: 'MultiPolygon', coordinates: w.polygons },
     })
   }
+  // Named USGS 3DHP stream channels become Water places too ("Creeks from USGS hydrography"): segments are grouped by GNIS name and
+  // chained when end points are within 200 m, so two far-apart streams with one name stay separate. A creek needs about a mile in the
+  // study area and a pin (the middle of its longest piece) inside Wake, Chatham or Durham; its lines go in the water layer.
+  const streamsMeta = readJson(join(SRC, 'usgs', '3dhp-streams', 'meta.json'))
+  const allCreeks = groupCreeks(readJson(join(SRC, 'usgs', '3dhp-streams', 'data.geojson')).features, scope)
+  const creeks = []
+  const creekStats = { grouped: allCreeks.length, tooShort: 0, noCountyArea: 0 }
+  for (const c of allCreeks) {
+    if (c.lengthM < CREEK_MIN_M) {
+      creekStats.tooShort++
+      continue
+    }
+    const lines = simplifyCreekLines(c.lines)
+    const pin = lines.length ? creekPin(lines, inCounties) : null
+    if (!pin) {
+      creekStats.noCountyArea++
+      continue
+    }
+    creeks.push({ ...c, lines, pin: [round(pin[0]), round(pin[1])] })
+  }
+  // Ids: "creek-<name>"; a second creek of the same name takes the GNIS id, then its first segment id, so ids never collide.
+  const takenIds = new Set(Object.values(allIds))
+  const creekEntries = creeks.map((c) => {
+    c.key = `usgs-3dhp-creek:${c.gnisid ?? 'x'}:${c.ids[0]}`
+    if (allIds[c.key] === undefined) {
+      const pick = [c.name, `${c.name} ${c.gnisid}`, `${c.name} ${c.gnisid} ${c.ids[0]}`].find((n) => !takenIds.has(`creek-${slug(n)}`))
+      allIds[c.key] = `creek-${slug(pick)}`
+    }
+    takenIds.add(allIds[c.key])
+    return { key: c.key, prefix: 'creek', name: c.name }
+  })
+  allIds = assignIds(allIds, creekEntries)
+  for (const c of creeks) {
+    c.id = allIds[c.key]
+    const county = countyOf(c.pin, counties)
+    const coverage = classifyLine(c.lines, scope)
+    places.push({
+      id: c.id,
+      name: c.name,
+      aliases: [],
+      category: 'water',
+      municipality: municipalityOf(c.pin, towns, county),
+      county,
+      coverage,
+      centroid: c.pin,
+      bbox: bboxOf(c.lines.flat()),
+      description: creekDescription(c.name, c.lengthM),
+      sourceIds: ['usgs-3dhp-streams'],
+    })
+    waterFeatures.push({
+      type: 'Feature',
+      properties: { placeId: c.id, outsideCore: coverage !== 'core' },
+      geometry: { type: 'MultiLineString', coordinates: c.lines },
+    })
+  }
   const centroidOf = new Map(places.map((p) => [p.id, p.centroid]))
   const watershedLinks = watershedRelationships(
-    relItems.filter((r) => centroidOf.has(r.id)).map((r) => ({ ...r, centroid: centroidOf.get(r.id) })),
+    [...relItems, ...creeks.map((c) => ({ id: c.id, kind: 'creek', lines: c.lines }))]
+      .filter((r) => centroidOf.has(r.id))
+      .map((r) => ({ ...r, centroid: centroidOf.get(r.id) })),
     watersheds,
     idByHuc12,
   )
+  const creekLinks = creekRelationships(creeks, relItems)
 
   for (const p of places) {
     const extra = aliasMap[p.id]
@@ -818,6 +963,17 @@ export function build({ write = true, outDir = OUT } = {}) {
     })
   }
 
+  if (fireStations.length) {
+    sources.push({
+      id: 'wake-fire-stations',
+      title: title('wake-fire-stations'),
+      name: 'Wake County',
+      url: fireMeta.url,
+      license: 'CC BY 4.0',
+      retrievedAt: fireMeta.retrievedAt,
+    })
+  }
+
   if (regionalTrails.length) {
     sources.push({
       id: 'wake-greenways',
@@ -826,6 +982,17 @@ export function build({ write = true, outDir = OUT } = {}) {
       url: wakeGreenMeta.url,
       license: 'CC BY 4.0',
       retrievedAt: wakeGreenMeta.retrievedAt,
+    })
+  }
+
+  if (creeks.length) {
+    sources.push({
+      id: 'usgs-3dhp-streams',
+      title: title('usgs-3dhp-streams'),
+      name: 'US Geological Survey',
+      url: streamsMeta.url,
+      license: 'Public domain (USGS)',
+      retrievedAt: streamsMeta.retrievedAt,
     })
   }
 
@@ -847,6 +1014,7 @@ export function build({ write = true, outDir = OUT } = {}) {
     caryFeatures: verifiedDate(featuresMeta),
     greenways: verifiedDate(greenMeta),
     wakeGreenways: verifiedDate(wakeGreenMeta),
+    fire: verifiedDate(fireMeta),
   })
   const usedSources = new Set(Object.values(details).flatMap((d) => d.fields.map((f) => f.sourceId)))
   if (usedSources.has('wake-park-entrances')) {
@@ -870,7 +1038,12 @@ export function build({ write = true, outDir = OUT } = {}) {
     })
   }
   const relationships = computeRelationships(relItems.filter((r) => placeIds.has(r.id)))
-  relationships.relationships.push(...watershedLinks.relationships)
+  const parkIds = new Set(places.filter((p) => p.category === 'park').map((p) => p.id))
+  const stationLinks = computeStationLinks(
+    relItems.filter((r) => r.kind === 'park' && parkIds.has(r.id)),
+    places.filter((p) => p.category === 'fire-station').map((p) => ({ id: p.id, point: p.centroid })),
+  )
+  relationships.relationships.push(...watershedLinks.relationships, ...creekLinks, ...stationLinks)
   relationships.relationships.sort((x, y) => cmp(x.from, y.from) || cmp(x.to, y.to) || cmp(x.kind, y.kind))
   for (const p of places) {
     const amenities = amenitiesOf(details[p.id].fields)
@@ -917,6 +1090,7 @@ export function build({ write = true, outDir = OUT } = {}) {
     wakeGreenways: { kept: wakeGw.kept, dropped: wakeGw.dropped, skipped: wakeGw.skipped, imported: regionalTrails.length },
     jurisdictionMismatches,
     ids: allIds,
+    creeks: { places: creeks, stats: creekStats, links: creekLinks },
     watersheds: { inScope: watersheds, noCountyArea: inScopeWatersheds.length - watersheds.length, notDetermined: watershedLinks.notDetermined, links: watershedLinks.relationships },
   }
 }
@@ -961,7 +1135,7 @@ export function buildDetails(places, visitCtx, entrances, aliasMap, dates) {
 
 function orderPlace(p) {
   const out = {}
-  for (const k of ['id', 'name', 'aliases', 'category', 'municipality', 'county', 'coverage', 'centroid', 'bbox', 'description', 'url', 'sourceIds', 'amenities']) {
+  for (const k of ['id', 'name', 'aliases', 'category', 'municipality', 'county', 'coverage', 'centroid', 'bbox', 'description', 'address', 'stationNumber', 'department', 'url', 'sourceIds', 'amenities']) {
     if (p[k] !== undefined) out[k] = p[k]
   }
   return out
@@ -992,6 +1166,7 @@ function main() {
   for (const d of r.dedupeSkips) console.log(`dedupe skip: Wake "${d.name}" == ${d.caryId} (${d.distanceM} m)`)
   for (const d of r.trailDedupeSkips) console.log(`dedupe skip: Wake greenway "${d.name}" == ${d.twinId} (${d.distanceM} m)`)
   console.log(`watersheds in scope: ${r.watersheds.inScope.length} (${r.watersheds.noCountyArea} skipped: no area in the three counties); watershed links ${r.watersheds.links.length}; parks/trails not determined ${r.watersheds.notDetermined.length}`)
+  console.log(`creeks: ${r.creeks.places.length} places (${r.creeks.stats.grouped} grouped, ${r.creeks.stats.tooShort} under a mile dropped, ${r.creeks.stats.noCountyArea} with no county area); creek links ${r.creeks.links.length} (${r.creeks.links.filter((x) => x.basis === 'along').length} along, ${r.creeks.links.filter((x) => x.kind === 'contained').length} in parks)`)
   console.log(`wake greenways imported ${r.wakeGreenways.imported}, kept groups ${r.wakeGreenways.kept.length}, dropped ${r.wakeGreenways.dropped.length}; skipped segments`, r.wakeGreenways.skipped)
   console.log(`greenways kept ${r.kept.length}, dropped ${r.dropped.length}; neighbours ${r.neighbours}; skipped`, r.skipped)
   console.log('by municipality:', tally('municipality'))

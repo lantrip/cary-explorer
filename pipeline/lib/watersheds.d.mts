@@ -29,11 +29,11 @@ export function pointInWatershed(point: Position, w: PreparedWatershed): boolean
 export function intersectsScope(w: Watershed | PreparedWatershed, prepared: unknown): boolean
 export function simplifyPolygons(polygons: Polygon[], toleranceM?: number): Polygon[]
 export function watershedsFor(
-  item: { kind: 'park' | 'trail'; centroid: Position; polygons?: Polygon[] },
+  item: { kind: 'park' | 'trail' | 'creek'; centroid: Position; polygons?: Polygon[] },
   prepared: PreparedWatershed[],
 ): string[]
 export function watershedRelationships(
-  items: { id: string; kind: 'park' | 'trail'; centroid: Position; polygons?: Polygon[]; lines?: Position[][] }[],
+  items: { id: string; kind: 'park' | 'trail' | 'creek'; centroid: Position; polygons?: Polygon[]; lines?: Position[][] }[],
   prepared: PreparedWatershed[],
   idByHuc12: Map<string, string>,
 ): { relationships: Relationship[]; notDetermined: string[] }

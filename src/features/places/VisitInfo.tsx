@@ -22,7 +22,6 @@ const ICON_PROPS = {
 const ICONS: Partial<Record<VisitFieldKey, string>> = {
   address: 'M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z M12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
 }
-const STATION_ICON = 'M4 9h16 M4 15h16 M10 3L8 21 M16 3l-2 18'
 
 const ROW = 'grid grid-cols-[16px_96px_1fr] items-start gap-3 border-b border-line py-3'
 
@@ -82,11 +81,6 @@ export function VisitInfo({ place, sources }: VisitInfoProps) {
               {place.address}
             </Row>
           )}
-          {place.stationNumber !== undefined && (
-            <Row icon={STATION_ICON} label="Station">
-              {place.stationNumber}
-            </Row>
-          )}
           {split?.known.map((field) => {
             const source = sources.find((s) => s.id === field.sourceId)
             return (
@@ -106,7 +100,8 @@ export function VisitInfo({ place, sources }: VisitInfoProps) {
         <p className="text-[14px] text-ink-muted">Visit details aren&apos;t available for this place.</p>
       )}
 
-      {split && (
+      {/* Park visit fields (parking, restrooms, wheelchair...) do not apply to a fire station: only its address shows. */}
+      {split && place.category !== 'fire-station' && (
         <div className="space-y-1 text-[13px] text-ink-muted">
           {split.known.length === 0 && <p className="text-[14px] text-ink">No visit details verified yet.</p>}
           {split.unknown.length > 0 && (
@@ -114,6 +109,10 @@ export function VisitInfo({ place, sources }: VisitInfoProps) {
           )}
           {split.wheelchairUnknown && <p>Wheelchair access: Not verified</p>}
         </div>
+      )}
+
+      {place.category === 'fire-station' && (
+        <p className="text-[13px] font-medium text-ink">Not for emergencies. In an emergency, call 911.</p>
       )}
 
       <p className="text-[13px] text-ink-muted">

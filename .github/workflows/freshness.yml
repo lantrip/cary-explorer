@@ -1,0 +1,51 @@
+name: Source freshness
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Wednesdays 09:00 UTC, midweek after the Monday refresh
+    - cron: '0 9 * * 3'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  freshness:
+    name: Check published sources are not stale
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: dev
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Check freshness
+        run: npm run check:freshness | tee "$RUNNER_TEMP/freshness.txt"
+
+      - name: Alert the maintainer
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ALERT_TITLE: Source data is stale
+          ALERT_BODY_FILE: ${{ runner.temp }}/alert.md
+        run: |
+          set -euo pipefail
+          {
+            echo "At least one published source is older than its expected refresh window."
+            echo
+            echo "- Run: ${RUN_URL}"
+            echo "- Runbook: docs/runbook.md (section \"A feed is stale\")"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/freshness.txt" 2>/dev/null || echo "(no report; the check itself failed, see the run)"
+            echo '```'
+          } > "$ALERT_BODY_FILE"
+          .github/scripts/alert.sh

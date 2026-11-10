@@ -151,7 +151,7 @@ export function trailShares(lines, prepared) {
 
 /** [{ code, share? }] for one item. Only a trail drawn as lines gets shares; `share` is set only when it has several. */
 function watershedLinksFor(item, prepared) {
-  if (item.kind === 'trail' && item.lines?.length) {
+  if ((item.kind === 'trail' || item.kind === 'creek') && item.lines?.length) {
     const shares = trailShares(item.lines, prepared)
     if (shares.length > 1) return shares
     if (shares.length === 1) return [{ code: shares[0].code }]

@@ -35,6 +35,14 @@ function SourceRow({ row }: { row: CreditsRow }) {
       </p>
       <p>Licence: {row.licence}</p>
       {row.credit && <p className="font-medium text-ink-soft">{row.credit}</p>}
+      {(row.updatedText || row.staleText) && (
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          {row.updatedText && <span>{row.updatedText}</span>}
+          {row.staleText && (
+            <span className="rounded-lg bg-warn-bg px-2 py-0.5 text-xs font-semibold text-warn-ink">{row.staleText}</span>
+          )}
+        </p>
+      )}
       <p>
         {row.retrievedAt && (
           <>

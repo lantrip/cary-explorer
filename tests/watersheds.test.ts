@@ -17,7 +17,7 @@ import { validateRegistry } from '../pipeline/lib/snapshot-core.mjs'
 import { validateRelease } from '../pipeline/lib/validate.mjs'
 import { LAYER_NAMES, parseLayerFeatures } from '../src/features/map/layers'
 import { parseCatalog } from '../src/features/places/catalog'
-import { connectionsFor, divideNote, indexRelationships, parseRelationships } from '../src/features/places/relationships'
+import { connectionsFor, divideNote, indexRelationships, moreWatershedsNote, parseRelationships } from '../src/features/places/relationships'
 import { isGeometryShown } from '../src/features/themes/layerSelection'
 import { CATEGORY_THEME } from '../src/features/themes/themes'
 import type { Place } from '../src/types/place'
@@ -148,12 +148,13 @@ describe('watershed relationship wording', () => {
   it('keeps the watershed basis and says "In the ... watershed", never "runs through"', () => {
     expect(rels[0].basis).toBe('watershed')
     const c = connectionsFor('park', index, byId)
-    expect(c.map((x) => x.label).slice(0, 2)).toEqual(['In the Crabtree Creek watershed', 'In the Walnut Creek watershed'])
+    expect(c[0].label).toBe('In the Crabtree Creek watershed')
     expect(c).toHaveLength(3)
-    expect(c.slice(0, 2).some((x) => /runs through/i.test(x.label))).toBe(false)
+    expect(c[0].label).not.toMatch(/runs through/i)
   })
-  it('puts watershed links before the other links', () => {
-    expect(connectionsFor('park', index, byId).map((x) => x.place.id).slice(0, 2)).toEqual(['w1', 'w2'])
+  it('shows one watershed line first and keeps the other slots for nearby places', () => {
+    expect(connectionsFor('park', index, byId).map((x) => x.place.id)).toEqual(['w1', 'trail', 'n1'])
+    expect(moreWatershedsNote('park', index, byId)).toBe('and 1 more watershed')
   })
   it('labels the watershed side with the park name and does not claim flow', () => {
     expect(connectionsFor('w1', index, byId)[0].label).toBe('Example Park is in this watershed')
@@ -170,10 +171,9 @@ describe('watershed relationship wording', () => {
       }),
     )
     const names = new Map([...byId, ['solo', place('solo', 'Solo Greenway', 'trail')]])
-    expect(connectionsFor('trail', multi, names).map((x) => x.label)).toEqual([
-      'Passes through the Crabtree Creek watershed',
-      'Passes through the Walnut Creek watershed',
-    ])
+    expect(connectionsFor('trail', multi, names).map((x) => x.label)).toEqual(['Passes through the Crabtree Creek watershed'])
+    expect(moreWatershedsNote('trail', multi, names)).toBe('and 1 more watershed')
+    expect(moreWatershedsNote('solo', multi, names)).toBeNull()
     expect(connectionsFor('solo', multi, names)[0].label).toBe('In the Crabtree Creek watershed')
     expect(connectionsFor('w1', multi, names).map((x) => x.label)).toEqual([
       'Example Greenway passes through this watershed',
@@ -213,11 +213,12 @@ describe('published data', () => {
   const links = rels.filter((r) => r.basis === 'watershed')
 
   it('has HUC-12 watershed places with a layer feature each and the USGS source', () => {
-    expect(water.length).toBeGreaterThan(30)
+    const sheds = water.filter((p) => !p.id.startsWith('creek-'))
+    expect(sheds.length).toBeGreaterThan(30)
     expect(catalog.sources.some((s) => s.id === 'usgs-wbd-huc12' && s.license)).toBe(true)
     const layer = read(release.layerPaths.water)
     expect(new Set(layer.features.map((f: { properties: { placeId: string } }) => f.properties.placeId))).toEqual(waterIds)
-    for (const p of water) {
+    for (const p of sheds) {
       expect(p.name).toMatch(/watershed$/i)
       expect(p.description).toMatch(/^Part of the .+ River Basin \(HUC-8 .+\)\.$/)
     }

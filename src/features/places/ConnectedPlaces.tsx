@@ -4,17 +4,21 @@ import { useAppStore } from '../../store/useAppStore'
 import type { Place } from '../../types/place'
 import { CategoryBadge } from '../themes/CategoryIcon'
 import { getTheme } from '../themes/themes'
-import { connectionsFor, divideNote, useRelationships } from './relationships'
+import { connectionsFor, divideNote, moreWatershedsNote, useRelationships } from './relationships'
 import { usePlaces } from './usePlaces'
 
 export function ConnectedPlaces({ place }: { place: Place }) {
   const index = useRelationships()
   const { places } = usePlaces()
   const setSelectedPlaceId = useAppStore((s) => s.setSelectedPlaceId)
-  const { connections, note } = useMemo(() => {
-    if (!index) return { connections: [], note: null }
+  const { connections, note, more } = useMemo(() => {
+    if (!index) return { connections: [], note: null, more: null }
     const byId = new Map(places.map((p) => [p.id, p]))
-    return { connections: connectionsFor(place.id, index, byId), note: divideNote(place.id, index, byId) }
+    return {
+      connections: connectionsFor(place.id, index, byId),
+      note: divideNote(place.id, index, byId),
+      more: moreWatershedsNote(place.id, index, byId),
+    }
   }, [index, places, place.id])
 
   if (connections.length === 0) return null
@@ -56,6 +60,7 @@ export function ConnectedPlaces({ place }: { place: Place }) {
           </li>
         ))}
       </ul>
+      {more ? <p className="text-[13px] text-ink-muted">{more}</p> : null}
       {note ? <p className="text-[13px] text-ink-muted">{note}</p> : null}
     </section>
   )
