@@ -59,8 +59,11 @@ export function DesktopPanel() {
         className="absolute inset-y-0 left-0 z-20 flex flex-col border-r border-line bg-panel shadow-lg transition-transform duration-[220ms] ease-in-out"
         style={{ width: DESKTOP_PANEL_WIDTH, transform: collapsed ? 'translateX(-100%)' : 'translateX(0)' }}
       >
-        <div className="relative z-10 flex shrink-0 flex-col gap-5 border-b border-line px-6 pt-6 pb-5">
-          <div className="flex items-center gap-3">
+        {/* Header and body share one scroll area: with Layers or Amenities open (or on a short window) the header
+            alone can exceed the panel height, and a fixed header would clip it and squeeze the list to nothing.
+            The search stays pinned at the top while the rest scrolls. */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="flex items-center gap-3 px-6 pt-6 pb-2">
             <span
               aria-hidden="true"
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-forest"
@@ -85,13 +88,17 @@ export function DesktopPanel() {
               <PanelIcon collapse />
             </button>
           </div>
-          <SearchBox />
-          <TownFilter />
-          <ThemeFilter />
-          <ViewToggle />
-        </div>
-        <div className="flex-1 overflow-y-auto px-6 pt-5 pb-6">
-          <PanelBody />
+          <div data-pinned className="sticky top-0 z-20 bg-panel px-6 pt-3 pb-2.5">
+            <SearchBox />
+          </div>
+          <div className="relative z-10 flex flex-col gap-5 border-b border-line px-6 pt-2.5 pb-5">
+            <TownFilter />
+            <ThemeFilter />
+            <ViewToggle />
+          </div>
+          <div className="px-6 pt-5 pb-6">
+            <PanelBody />
+          </div>
         </div>
         {/* Footer entry point; while the panel is collapsed (inert) a floating button below takes over. */}
         {!collapsed && (

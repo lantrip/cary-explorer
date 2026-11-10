@@ -53,9 +53,18 @@ export function PlaceCard({ place, onClose }: PlaceCardProps) {
   // Move focus to the name whenever a place is selected so keyboard and screen reader users land on the card.
   useEffect(() => {
     // preventScroll: on phones the sheet is still growing, so a scrolling focus would leave the card cut off.
-    // Instead the card's scroll area starts at the top, so the band and name are visible.
-    headingRef.current?.focus({ preventScroll: true })
-    headingRef.current?.closest('.overflow-y-auto')?.scrollTo({ top: 0 })
+    // Instead the card's scroll area starts at the top, so the band and name are visible. On desktop the panel header
+    // shares that scroll area; if it is tall enough (Layers or Amenities open) to push the card out of view, scroll
+    // to the card itself instead.
+    const heading = headingRef.current
+    heading?.focus({ preventScroll: true })
+    const scroller = heading?.closest('.overflow-y-auto')
+    const card = heading?.closest('article')
+    if (!scroller || !card) return
+    const cardTop = card.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop
+    // Leave room for the pinned search so it does not cover the card's name.
+    const pinned = scroller.querySelector<HTMLElement>(':scope > [data-pinned]')?.offsetHeight ?? 0
+    scroller.scrollTo({ top: cardTop > scroller.clientHeight / 2 ? cardTop - pinned - 16 : 0 })
   }, [place.id])
 
   function handleClose() {
