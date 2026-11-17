@@ -6,7 +6,7 @@ const DAY_MS = 86_400_000
 export const CADENCE_DAYS = { weekly: 7, monthly: 31 }
 export const MARGIN_DAYS = { weekly: 3, monthly: 7 }
 
-// Catalog source id -> registry id, where they differ. Duplicated from REGISTRY_ID in build-catalog.mjs (owned elsewhere); keep in step.
+// Catalog source id -> registry id, where they differ. The one mapping: build-catalog.mjs and publish both look entries up through registryEntry.
 export const REGISTRY_ID = {
   'cary-parks': 'parks-and-recreation-feature-polygons',
   'cary-greenways': 'proposed-greenway-trails',

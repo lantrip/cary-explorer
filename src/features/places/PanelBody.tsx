@@ -91,7 +91,7 @@ export function PanelBody() {
       <div className={`${EMPTY_CARD} bg-white`}>
       <p className="font-display text-xl font-semibold text-ink">Pick a place to start</p>
       <p className="mt-1 text-sm leading-relaxed text-ink-muted">
-        Tap a pin on the map, search by name, or switch to the list.
+        Tap a pin on the map, search by name, or switch to the list. Long-press the map to see which watershed a spot is in, or search by coordinates.
       </p>
       </div>
       <CollectionsEntry />

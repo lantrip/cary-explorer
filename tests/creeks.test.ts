@@ -261,7 +261,7 @@ describe('published creeks', () => {
     for (const c of creeks) {
       expect(c.category).toBe('water')
       expect(c.sourceIds).toEqual(['usgs-3dhp-streams'])
-      expect(c.description).toMatch(/^(Stream|River), about [\d.]+ miles? in this area \(USGS hydrography\)\.$/)
+      expect(c.description).toMatch(/^(Stream|River), about [\d.]+ miles? in this area \(USGS hydrography\)\./)
       expect(kinds.get(c.id), c.id).toBe('MultiLineString')
     }
     expect(parseLayerFeatures(water).filter((f) => f.get('kind') === 'line').length).toBeGreaterThanOrEqual(creeks.length)

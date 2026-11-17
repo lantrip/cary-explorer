@@ -93,6 +93,24 @@ describe('fire stations in the built catalog (real data)', () => {
     }
   })
 
+  it('audit: every station has a name, an address and a point inside a loose Wake County box; department is an allowed value', () => {
+    const cen = (p: P) => (p as unknown as { centroid: [number, number] }).centroid
+    for (const p of stations as (P & { department?: string })[]) {
+      expect(p.name.trim()).not.toBe('')
+      expect((p.address ?? '').trim()).not.toBe('')
+      const [lon, lat] = cen(p)
+      expect(lon).toBeGreaterThan(-79.2)
+      expect(lon).toBeLessThan(-78.1)
+      expect(lat).toBeGreaterThan(35.4)
+      expect(lat).toBeLessThan(36.2)
+      if (p.department !== undefined) expect(['Cary Fire Department', 'Raleigh Fire Department']).toContain(p.department)
+    }
+    const dept = (d: string) => (stations as (P & { department?: string })[]).filter((p) => p.department === d).length
+    expect(dept('Cary Fire Department')).toBeGreaterThanOrEqual(9)
+    expect(dept('Raleigh Fire Department')).toBeGreaterThanOrEqual(1)
+    for (const p of stations) expect(['core', 'nearby']).toContain(p.coverage)
+  })
+
   it('has the 9 Cary stations with the right addresses', () => {
     const cary = stations.filter((p) => /^Cary Fire Station \d$/.test(p.name))
     expect(cary.map((p) => p.name).sort()).toEqual(Array.from({ length: 9 }, (_, i) => `Cary Fire Station ${i + 1}`))
@@ -203,7 +221,7 @@ describe('fire station card safety note', () => {
 
 describe('fire station visit block', () => {
   const src = readFileSync(fileURLToPath(new URL('../src/features/places/VisitInfo.tsx', import.meta.url)), 'utf8')
-  it('hides the "Not verified" and wheelchair lines for fire stations only', () => {
-    expect(src).toMatch(/\{split && place\.category !== 'fire-station' && \([\s\S]*Not verified:[\s\S]*Wheelchair access: Not verified/)
+  it('hides the "Not verified" and wheelchair lines behind the shared category check', () => {
+    expect(src).toMatch(/\{split && showsParkVisitFields\(place\.category\) && \([\s\S]*Not verified:[\s\S]*Wheelchair access: Not verified/)
   })
 })

@@ -35,7 +35,8 @@ import { LAYER_Z, AREA_LAYER_MIN_ZOOM, geometryStyleFor } from './geometryStyles
 import { useGeometryLayers } from './layers'
 import { isGeometryShown } from '../themes/layerSelection'
 import type { GeometryKind, GeometryStatus } from './layers'
-import { pickBest } from './picking'
+import { isOnPlace, pickBest } from './picking'
+import { createLongPress } from './longPress'
 import type { PickKind } from './picking'
 import { FRAME_MAX_ZOOM, planFrame, selectedGeometryFeatures, shouldFrame } from './framing'
 import type { FramedState } from './framing'
@@ -162,6 +163,8 @@ export function MapView() {
   // Inputs seen by the last framing pass, to tell what changed.
   const prevFrameRef = useRef<{ sheetState: SheetState; panelCollapsed: boolean; isDesktop: boolean; index: unknown } | null>(null)
   const hoveredIdRef = useRef<string | null>(null)
+  // Category by place id, for map handlers created once (to tell watershed areas from places when picking a spot).
+  const categoryByIdRef = useRef(new Map<string, string>())
   // Latest framing inputs for map event handlers created once in the init effect.
   const framingRef = useRef({ isDesktop: true, sheetState: 'peek' as SheetState })
   // Last selection the view flew to, so the fly-to runs only when the selection changes.
@@ -179,6 +182,10 @@ export function MapView() {
   useEffect(() => {
     framingRef.current = { isDesktop, sheetState }
   }, [isDesktop, sheetState])
+
+  useEffect(() => {
+    categoryByIdRef.current = new Map(allPlaces.map((p) => [p.id, p.category]))
+  }, [allPlaces])
 
   useEffect(() => {
     const container = containerRef.current
@@ -400,6 +407,50 @@ export function MapView() {
       reportCamera({ zoom, lat, lon })
     })
 
+    // Pick a spot: long-press (touch or mouse) or right-click on empty map shows the coordinate panel for that point.
+    // Not on a pin, line or area (those select), and not on the map's own controls. The point is never sent anywhere.
+    const onMapControl = (t: EventTarget | null) => t instanceof Element && t.closest('.ol-control') !== null
+    const pickSpot = (pixel: number[]) => {
+      const hits: { kind: PickKind; placeId?: string }[] = []
+      map.forEachFeatureAtPixel(
+        pixel,
+        (feature, layer) => {
+          const kind = layer ? kindOf.get(layer) : undefined
+          const placeId = feature.get('placeId') as unknown
+          if (kind) hits.push({ kind, placeId: typeof placeId === 'string' ? placeId : undefined })
+        },
+        pickOptions,
+      )
+      if (isOnPlace(hits, (id) => categoryByIdRef.current.get(id))) return false
+      const coord = map.getCoordinateFromPixel(pixel)
+      if (!coord) return false
+      const [lon, lat] = toLonLat(coord)
+      useAppStore.getState().showPoint({ lat, lon }, false)
+      return true
+    }
+    const pixelOf = (x: number, y: number) => {
+      const rect = (viewport ?? container).getBoundingClientRect()
+      return [x - rect.left, y - rect.top]
+    }
+    const press = createLongPress({ onLongPress: (x, y) => pickSpot(pixelOf(x, y)) })
+    const onDown = (e: PointerEvent) => {
+      if ((e.pointerType === 'mouse' && e.button !== 0) || onMapControl(e.target)) return press.cancel()
+      press.start(e.pointerId, e.clientX, e.clientY)
+    }
+    const onMove = (e: PointerEvent) => press.move(e.pointerId, e.clientX, e.clientY)
+    const onUp = (e: PointerEvent) => press.end(e.pointerId)
+    const onContextMenu = (e: MouseEvent) => {
+      if (onMapControl(e.target)) return
+      // Handled (so no browser menu) only when the spot is empty; over a place the browser menu stays.
+      if (pickSpot(pixelOf(e.clientX, e.clientY))) e.preventDefault()
+    }
+    viewport?.addEventListener('pointerdown', onDown)
+    viewport?.addEventListener('pointermove', onMove)
+    viewport?.addEventListener('pointerup', onUp)
+    viewport?.addEventListener('pointercancel', onUp)
+    viewport?.addEventListener('contextmenu', onContextMenu)
+    map.on('movestart', press.cancel)
+
     const resizeObserver = new ResizeObserver(() => map.updateSize())
     resizeObserver.observe(container)
 
@@ -414,6 +465,12 @@ export function MapView() {
     return () => {
       resizeObserver.disconnect()
       viewport?.removeEventListener('pointerleave', onLeave)
+      viewport?.removeEventListener('pointerdown', onDown)
+      viewport?.removeEventListener('pointermove', onMove)
+      viewport?.removeEventListener('pointerup', onUp)
+      viewport?.removeEventListener('pointercancel', onUp)
+      viewport?.removeEventListener('contextmenu', onContextMenu)
+      press.cancel()
       viewport?.removeEventListener('wheel', markMoved)
       viewport?.removeEventListener('keydown', markMoved)
       mapRef.current = null

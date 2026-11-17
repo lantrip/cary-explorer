@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/useAppStore'
 import { usePlaces } from '../places/usePlaces'
 import { formatStraightLine } from '../location/distance'
 import type { Place } from '../../types/place'
+import { WatershedLine } from '../watersheds/WatershedLine'
 import { formatPoint, isOutsideArea, nearestPlaces } from './coordinates'
 
 const linkButton =
@@ -14,6 +15,7 @@ export function CoordinatePanel({ onPick }: { onPick: (place: Place) => void }) 
   const setDroppedPin = useAppStore((s) => s.setDroppedPin)
   const { places } = usePlaces()
   const nearest = useMemo(() => (pin ? nearestPlaces(places, pin, 3) : []), [pin, places])
+  const pinPoint = useMemo<[number, number] | null>(() => (pin ? [pin.lon, pin.lat] : null), [pin])
   if (!pin) return null
   return (
     <section aria-label="Point from coordinates" className="mt-2 rounded-control bg-forest-tint text-sm text-ink">
@@ -24,6 +26,9 @@ export function CoordinatePanel({ onPick }: { onPick: (place: Place) => void }) 
         </button>
       </div>
       {isOutsideArea(pin) && <p className="px-3 pb-2">This point is outside the area this guide covers.</p>}
+      <div className="px-1.5 empty:hidden">
+        <WatershedLine point={pinPoint} />
+      </div>
       {nearest.length > 0 && (
         <div className="px-1.5 pb-1.5">
           <h3 className="px-1.5 pt-1 text-[13px] font-semibold text-ink-muted">Nearest places (straight line)</h3>

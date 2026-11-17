@@ -27,6 +27,20 @@ describe('classify', () => {
     expect(classifyLine([[[11, 0], [14, 0]]], scope)).toBe('nearby')
     expect(classifyLine([[[16, 0], [17, 0]]], scope)).toBe('outside')
   })
+  it('labels points either side of the core and buffer edges', () => {
+    expect(classify([9.99, 0], scope)).toBe('core')
+    expect(classify([10.01, 0], scope)).toBe('nearby')
+    expect(classify([14.99, 0], scope)).toBe('nearby')
+    expect(classify([15.01, 0], scope)).toBe('outside')
+    expect(classify([-0.01, 0], scope)).toBe('nearby')
+    expect(classify([-5.01, 0], scope)).toBe('outside')
+  })
+  it('labels a line core when any vertex is in core, even if most of it is in the buffer', () => {
+    expect(classifyLine([[[14, 0], [12, 0], [9.5, 0]]], scope)).toBe('core')
+    expect(classifyLine([[[16, 0], [17, 0]], [[14, 0], [9.9, 0]]], scope)).toBe('core')
+    expect(classifyLine([[[16, 0], [14.9, 0]]], scope)).toBe('nearby')
+    expect(classifyLine([[[15.5, 0], [17, 0]]], scope)).toBe('outside')
+  })
   it('works with the real polygons: Cary is core, Raleigh is core, Greensboro is outside', () => {
     const load = (f: string) => JSON.parse(readFileSync(new URL(`../pipeline/sources/boundaries/${f}`, import.meta.url), 'utf8'))
     const real = createScope({

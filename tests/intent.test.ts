@@ -188,6 +188,13 @@ describe('planCategoryInTown', () => {
     expect(intentLabel(intent, TOWNS, byId)).toBe('Show fire stations in Cary')
     expect(visible(planCategoryInTown(intent, all, {}), all, {})).toEqual(['fire-station'])
   })
+  it('"library" / "libraries" / "public library" is a category intent, labelled "libraries"', () => {
+    for (const q of ['libraries', 'Library', 'public library', 'show me libraries']) {
+      expect(parseIntent(q, ctx), q).toEqual({ kind: 'category', categoryIds: ['library'] })
+    }
+    const intent = parseIntent('libraries', ctx) as Extract<Intent, { kind: 'category' }>
+    expect(intentLabel(intent, TOWNS, byId)).toBe('Show libraries')
+  })
   it('leaves geometry layers alone', () => {
     const plan = planCategoryInTown(townIntent(['park'], 'apex'), all, {})
     expect(plan.layerChanges).toEqual([{ id: 'trail', on: false }])

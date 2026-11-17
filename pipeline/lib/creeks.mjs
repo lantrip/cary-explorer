@@ -114,6 +114,32 @@ export function creekDescription(name, lengthM) {
   return `${kind}, about ${miles} ${miles === '1' ? 'mile' : 'miles'} in this area (USGS hydrography).`
 }
 
+/**
+ * Card copy for a creek, from the data only: length, the watershed(s) and basin(s) it is in (membership), and the greenways
+ * that follow it. `ctx`: { watersheds: [{ name, basin? }] (main one first), greenways: [name] }. No flow, quality or habitat claim.
+ */
+export function creekCardDescription(name, lengthM, ctx = {}) {
+  const parts = [creekDescription(name, lengthM)]
+  const ws = ctx.watersheds ?? []
+  if (ws.length) {
+    const short = (w) => w.name.replace(/ watershed$/i, '')
+    const shown = ws.slice(0, 2).map(short)
+    const more = ws.length - shown.length
+    const list = shown.join(' and ') + (more > 0 ? ` and ${more} more` : '')
+    const basins = [...new Set(ws.map((w) => w.basin).filter(Boolean))]
+    const basinText = basins.length === 0 ? '' : basins.length === 1 ? `, part of the ${basins[0]} River Basin` : `, part of the ${basins.slice(0, -1).join(', ')} and ${basins[basins.length - 1]} River Basins`
+    parts.push(`In the ${list} ${ws.length === 1 ? 'watershed' : 'watersheds'}${basinText}.`)
+  }
+  const gw = [...new Set(ctx.greenways ?? [])]
+  if (gw.length) {
+    const shown = gw.slice(0, 3)
+    const more = gw.length - shown.length
+    const list = shown.length > 1 ? `${shown.slice(0, -1).join(', ')} and ${shown[shown.length - 1]}` : shown[0]
+    parts.push(`Greenways that follow it: ${list}${more > 0 ? ` and ${more} more` : ''}.`)
+  }
+  return parts.join(' ')
+}
+
 // ---- links ----
 
 /** Local metre grid around a latitude. */

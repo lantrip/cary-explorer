@@ -21,9 +21,15 @@ import {
   splitByCore,
 } from '../lib/geo.mjs'
 import { computeRelationships, computeStationLinks } from '../lib/relationships.mjs'
+import { findContainedTwin } from '../lib/twins.mjs'
+import { curatedRelationships, loadCurated } from '../lib/curated.mjs'
 import { buildCollections } from '../lib/collections.mjs'
-import { CREEK_MIN_M, creekDescription, creekPin, creekRelationships, groupCreeks, simplifyCreekLines } from '../lib/creeks.mjs'
-import { intersectsScope, mapWatersheds, prepareWatershed, representativePoint, simplifyPolygons, watershedDescription, watershedRelationships } from '../lib/watersheds.mjs'
+import { CREEK_MIN_M, creekCardDescription, creekDescription, creekPin, creekRelationships, groupCreeks, simplifyCreekLines } from '../lib/creeks.mjs'
+import { CARY_BASIN_REFERENCES, caryLineWatershedIds, cityBasinLine, cityBasins, intersectsScope, mapWatersheds, prepareWatershed, representativePoint, simplifyPolygons, watershedDescription, watershedRelationships } from '../lib/watersheds.mjs'
+import { groupLibraries } from '../lib/libraries.mjs'
+import { sourceRegistryFields } from '../lib/source-registry.mjs'
+import { registryEntry } from '../lib/health.mjs'
+import { formatRepairReport, newReport, repairFeatures } from '../lib/repair.mjs'
 import { amenitiesOf, buildVisitFields, verifiedDate } from '../lib/visit.mjs'
 
 export { pointInGeometry, pointInPolygon }
@@ -31,18 +37,21 @@ export { pointInGeometry, pointInPolygon }
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SRC = join(ROOT, 'pipeline', 'sources')
 const OUT = join(ROOT, 'pipeline', '.staging')
+const CURATED = join(ROOT, 'pipeline', 'relationships.curated.json')
 
-// Catalog source id -> registry id (pipeline/sources.config.json), where they differ. The title comes from the registry.
-const REGISTRY_ID = {
-  'cary-parks': 'parks-and-recreation-feature-polygons',
-  'cary-greenways': 'proposed-greenway-trails',
-  'cary-park-features': 'parks-and-recreation-feature-map',
-}
 /** The registry's dataset title for a catalog source id. Throws when the registry has none. */
 export function registryTitle(registry, catalogId) {
-  const entry = registry.find((r) => r.id === (REGISTRY_ID[catalogId] ?? catalogId))
+  const entry = registryEntry(registry, catalogId)
   if (typeof entry?.title !== 'string' || !entry.title.trim()) throw new Error(`No registry title for catalog source "${catalogId}"`)
   return entry.title.trim()
+}
+/** The registry's configured licence status (e.g. "open") for a catalog source id. Throws when the registry has none. */
+export function registryLicenceStatus(registry, catalogId) {
+  const entry = registryEntry(registry, catalogId)
+  if (typeof entry?.licenceStatus !== 'string' || !entry.licenceStatus.trim()) {
+    throw new Error(`No registry licenceStatus for catalog source "${catalogId}" (pipeline/sources.config.json)`)
+  }
+  return entry.licenceStatus.trim()
 }
 
 const PARK_LEVELS = new Set(['Existing Park', 'Natural Area', 'Community Use Facility'])
@@ -51,6 +60,8 @@ const GREENWAY_EXCLUDE = /connector|street-side|sidewalk|side path/i
 const COORD_DECIMALS = 6
 const WATER_COORD_DECIMALS = 5
 const cmp = (x, y) => (x < y ? -1 : x > y ? 1 : 0)
+/** Orders record ids (numeric ids by value, others as text) so every list is stable. */
+const byRecordId = (a, b) => String(a).localeCompare(String(b), 'en', { numeric: true })
 // The snapshot's `length_in_miles` is off by a factor of 5280 (the median haversine length of a segment
 // divided by it is 5280.0), so real miles = value * 5280. Verified against the geometry.
 const LENGTH_MILES_SCALE = 5280
@@ -168,12 +179,13 @@ export function groupParks(features) {
     const polys = polygonsOf(f.geometry)
     if (!polys.length) continue
     let g = groups.get(key)
-    if (!g) groups.set(key, (g = { key, names: [], levels: new Set(), acres: 0, polygons: [], parcels: 0 }))
+    if (!g) groups.set(key, (g = { key, names: [], levels: new Set(), acres: 0, polygons: [], parcels: 0, realids: new Set() }))
     g.names.push(p.name)
     g.levels.add(p.uselevel2)
     g.acres += Number(p.calcacreag) || 0
     g.polygons.push(...polys)
     g.parcels++
+    if (p.realid !== null && p.realid !== undefined && String(p.realid).trim()) g.realids.add(String(p.realid).trim())
   }
   return [...groups.values()]
     .map((g) => {
@@ -187,6 +199,7 @@ export function groupParks(features) {
         acres: g.acres,
         polygons: g.polygons,
         parcels: g.parcels,
+        realids: [...g.realids].sort(byRecordId),
       }
     })
     .sort((a, b) => a.key.localeCompare(b.key, 'en'))
@@ -205,16 +218,17 @@ export function groupGreenways(features) {
     const lines = linesOf(f.geometry)
     if (!lines.length) continue
     let g = groups.get(key)
-    if (!g) groups.set(key, (g = { key, names: [], miles: 0, lines: [], segments: 0 }))
+    if (!g) groups.set(key, (g = { key, names: [], miles: 0, lines: [], segments: 0, segmentIds: new Set() }))
     g.names.push(p.name)
     g.miles += (Number(p.length_in_miles) || 0) * LENGTH_MILES_SCALE
     g.lines.push(...lines)
     g.segments++
+    if (p.segmentid !== null && p.segmentid !== undefined) g.segmentIds.add(String(p.segmentid))
   }
   const kept = []
   const dropped = []
   for (const g of groups.values()) {
-    const entry = { key: g.key, name: displayName(g.names), miles: g.miles, lines: g.lines, segments: g.segments }
+    const entry = { key: g.key, name: displayName(g.names), miles: g.miles, lines: g.lines, segments: g.segments, segmentIds: [...g.segmentIds].sort(byRecordId) }
     ;(g.miles >= GREENWAY_MIN_MILES && !GREENWAY_EXCLUDE.test(g.key) ? kept : dropped).push(entry)
   }
   const byKey = (a, b) => a.key.localeCompare(b.key, 'en')
@@ -302,12 +316,15 @@ function roundGeometry(geometry, decimals) {
   }
 }
 
+/** Wake greenway twins (findTrailTwin) still use name + a vertex within 1 km of the place centroid. */
 export const DEDUPE_M = 1000
 
-/** The Cary place that is the same park as a Wake record: same normalized name (or alias) within 1 km. */
+/**
+ * The Cary park that is the same park as a Wake record (decision 29): same normalized name (or alias) AND the Wake point
+ * inside, or within 50 m of, the Cary park's polygon(s). Proximity alone never merges. Returns { candidate, distanceM } or undefined.
+ */
 export function findCaryTwin(name, pt, caryNames) {
-  const wn = normalize(name)
-  return caryNames.find((c) => c.names.has(wn) && haversineM(c.centroid, pt) <= DEDUPE_M)
+  return findContainedTwin(normalize(name), pt, caryNames)
 }
 
 /**
@@ -465,7 +482,7 @@ export function groupWakeGreenways(features) {
       continue
     }
     let g = groups.get(key)
-    if (!g) groups.set(key, (g = { key, names: [], lengthM: 0, lines: [], proposedLines: [], segments: 0, owners: new Map(), parts: [] }))
+    if (!g) groups.set(key, (g = { key, names: [], lengthM: 0, lines: [], proposedLines: [], segments: 0, owners: new Map(), parts: [], objectIds: [] }))
     if (status === 'proposed') {
       g.proposedLines.push(...lines)
       continue
@@ -475,6 +492,7 @@ export function groupWakeGreenways(features) {
     g.lengthM += lengthM
     g.lines.push(...lines)
     g.segments++
+    if (p.OBJECTID !== null && p.OBJECTID !== undefined) g.objectIds.push(String(p.OBJECTID))
     const label = wakeOwnerLabel(p.OWNER)
     if (label) g.owners.set(label, (g.owners.get(label) ?? 0) + lengthM)
     g.parts.push({ surface: p.TRAIL_SURFACE, access: p.ACCESSIBILITY_STATUS, lengthM })
@@ -494,6 +512,7 @@ export function groupWakeGreenways(features) {
       owners,
       surface: dominantSurface(g.parts),
       visitSegments: g.parts.map(({ surface, access }) => ({ surface, access })),
+      objectIds: g.objectIds.sort(byRecordId),
     }
     ;(entry.miles >= GREENWAY_MIN_MILES && !WAKE_GREENWAY_EXCLUDE.test(g.key) ? kept : dropped).push(entry)
   }
@@ -520,7 +539,7 @@ export function findTrailTwin(name, lines, candidates) {
   return best
 }
 
-export function build({ write = true, outDir = OUT } = {}) {
+export function build({ write = true, outDir = OUT, curatedPath = CURATED } = {}) {
   const parksData = readJson(join(cary('parks-and-recreation-feature-polygons'), 'data.geojson'))
   const pointsData = readJson(join(cary('parks-and-recreation-feature-map'), 'data.geojson'))
   const greenData = readJson(join(cary('proposed-greenway-trails'), 'data.geojson'))
@@ -533,6 +552,8 @@ export function build({ write = true, outDir = OUT } = {}) {
   const wakeGreenMeta = readJson(join(SRC, 'wake', 'greenways', 'meta.json'))
   const fireData = readJson(join(SRC, 'wake', 'fire-stations', 'data.geojson'))
   const fireMeta = readJson(join(SRC, 'wake', 'fire-stations', 'meta.json'))
+  const libData = readJson(join(SRC, 'wake', 'libraries', 'data.geojson'))
+  const libMeta = readJson(join(SRC, 'wake', 'libraries', 'meta.json'))
   const entrancesData = readJson(join(SRC, 'wake', 'park-entrances', 'data.geojson'))
   const entrancesMeta = readJson(join(SRC, 'wake', 'park-entrances', 'meta.json'))
   const featuresMeta = readJson(join(cary('parks-and-recreation-feature-map'), 'meta.json'))
@@ -582,6 +603,13 @@ export function build({ write = true, outDir = OUT } = {}) {
   const parkFeatures = []
   const greenFeatures = []
   const relItems = []
+  // Contributing source records per place: placeId -> [{ sourceId, recordId }] (decision 29). Only ids the snapshots hold.
+  const records = new Map()
+  const addRecord = (placeId, sourceId, recordId) => {
+    if (recordId === null || recordId === undefined || String(recordId).trim() === '') return
+    if (!records.has(placeId)) records.set(placeId, [])
+    records.get(placeId).push({ sourceId, recordId: String(recordId).trim() })
+  }
   const trailMiles = new Map() // trail place id -> miles computed above (the same figure the description rounds)
 
   for (const p of parks) {
@@ -621,6 +649,7 @@ export function build({ write = true, outDir = OUT } = {}) {
       geometry: { type: 'MultiPolygon', coordinates: p.polygons },
     })
     relItems.push({ id, kind: 'park', polygons: p.polygons })
+    for (const realid of p.realids) addRecord(id, 'cary-parks', realid)
   }
 
   for (const g of kept) {
@@ -651,20 +680,24 @@ export function build({ write = true, outDir = OUT } = {}) {
     greenFeatures.push(...greenwayFeatures(id, lines, proposedLines.get(g.key) ?? [], scope))
     relItems.push({ id, kind: 'trail', lines })
     trailMiles.set(id, g.miles)
+    for (const segmentId of g.segmentIds) addRecord(id, 'cary-greenways', segmentId)
   }
 
   // Wake County parks layer. Cary's own CC0 data wins inside Cary's corporate limits (docs/source-matrix.md section 4).
   const limitGeoms = limits.features.map((f) => f.geometry)
   const neighbours = []
   const wakeKeys = []
+  const wakeExtraIds = new Map() // Wake park key -> OBJECTIDs of later same-named records folded into the first
   const seenKeys = new Set()
   let skippedInCary = 0
   let skippedOutside = 0
   let skippedDuplicate = 0
   const dedupeSkips = []
+  const polygonsById = new Map(relItems.filter((r) => r.kind === 'park' && r.polygons).map((r) => [r.id, r.polygons]))
   const caryNames = places.map((p) => ({
     id: p.id,
     centroid: p.centroid,
+    polygons: polygonsById.get(p.id),
     names: new Set([p.name, ...(p.aliases ?? []), ...(aliasMap[p.id] ?? [])].map(normalize).filter(Boolean)),
   }))
   for (const f of wake.features) {
@@ -679,20 +712,24 @@ export function build({ write = true, outDir = OUT } = {}) {
       skippedOutside++
       continue
     }
-    // Same park listed by both sources: same normalized name (or a Cary alias) within 1 km of a Cary place.
+    // Same park listed by both sources: same normalized name (or a Cary alias) AND the Wake point inside, or within 50 m of,
+    // the Cary park's polygon(s). The Wake record then counts as a contributing record of the Cary place.
     const twin = findCaryTwin(name, pt, caryNames)
     if (twin) {
-      dedupeSkips.push({ name: String(name).trim(), caryId: twin.id, distanceM: Math.round(haversineM(twin.centroid, pt)) })
+      dedupeSkips.push({ name: String(name).trim(), caryId: twin.candidate.id, distanceM: twin.distanceM, objectId: f.properties.OBJECTID })
+      addRecord(twin.candidate.id, 'wake-parks', f.properties.OBJECTID)
       continue
     }
     const key = `wake-parks:${normalize(name)}`
     if (seenKeys.has(key)) {
       skippedDuplicate++
+      wakeExtraIds.get(key).push(f.properties.OBJECTID)
       continue
     }
     seenKeys.add(key)
+    wakeExtraIds.set(key, [])
     wakeKeys.push({ key, prefix: 'wake-park', name })
-    neighbours.push({ f, name: String(name).trim().replace(/\s+/g, ' '), pt })
+    neighbours.push({ f, key, name: String(name).trim().replace(/\s+/g, ' '), pt })
   }
   let allIds = assignIds(ids, wakeKeys)
   const jurisdictionMismatches = []
@@ -722,6 +759,7 @@ export function build({ write = true, outDir = OUT } = {}) {
     if (typeof u === 'string' && u.startsWith('https://')) place.url = u
     places.push(place)
     visitCtx.set(place.id, { wake: n.f.properties })
+    for (const objectId of [n.f.properties.OBJECTID, ...wakeExtraIds.get(n.key)]) addRecord(place.id, 'wake-parks', objectId)
     relItems.push({ id: place.id, kind: 'park', points: [place.centroid] })
   }
 
@@ -753,7 +791,35 @@ export function build({ write = true, outDir = OUT } = {}) {
     }
     places.push(place)
     visitCtx.set(place.id, { fire: { address: s.address } })
+    addRecord(place.id, 'wake-fire-stations', s.stationId)
   }
+
+  // Wake County Public Libraries (#125): branches inside the core or nearby area become `library` places; a non-empty STATUS is skipped.
+  const libGroup = groupLibraries(libData.features)
+  const libraries = libGroup.libraries.filter((l) => classify(l.pt, scope) !== 'outside')
+  allIds = assignIds(allIds, libraries.map((l) => ({ key: `wake-libraries:${l.code.toLowerCase()}`, prefix: 'wake-library', name: l.code })))
+  for (const l of libraries) {
+    const pt = roundPos(l.pt, COORD_DECIMALS)
+    const county = countyOf(pt, counties) ?? 'Wake'
+    const place = {
+      id: allIds[`wake-libraries:${l.code.toLowerCase()}`],
+      name: l.name,
+      aliases: l.aliases,
+      category: 'library',
+      municipality: municipalityOf(pt, towns, county),
+      county,
+      coverage: classify(l.pt, scope),
+      centroid: pt,
+      description: l.description,
+      sourceIds: ['wake-libraries'],
+    }
+    if (l.address) place.address = l.address
+    places.push(place)
+    visitCtx.set(place.id, { library: { address: l.address, hours: l.hours } })
+    addRecord(place.id, 'wake-libraries', l.code)
+  }
+  const libraryStats = { published: libraries.length, skipped: libGroup.skipped, outside: libGroup.libraries.length - libraries.length }
+  console.log(`libraries: ${libraryStats.published} published, ${libraryStats.skipped} skipped (non-empty STATUS), ${libraryStats.outside} outside coverage`)
 
   // Wake County greenways outside Cary: named systems become trail places, lines go to the greenways layer.
   const wakeGw = groupWakeGreenways(wakeGreenData.features)
@@ -798,6 +864,7 @@ export function build({ write = true, outDir = OUT } = {}) {
       sourceIds: ['wake-greenways'],
     })
     visitCtx.set(id, { wakeSegments: g.visitSegments })
+    for (const objectId of g.objectIds) addRecord(id, 'wake-greenways', objectId)
     greenFeatures.push(...greenwayFeatures(id, lines, g.proposedLines.map((l) => simplifyLine(l, WAKE_GREENWAY_SIMPLIFY_M)), scope))
     relItems.push({ id, kind: 'trail', lines })
     trailMiles.set(id, g.miles)
@@ -842,6 +909,7 @@ export function build({ write = true, outDir = OUT } = {}) {
       description: watershedDescription(w),
       sourceIds: ['usgs-wbd-huc12'],
     })
+    addRecord(id, 'usgs-wbd-huc12', w.huc12)
     waterFeatures.push({
       type: 'Feature',
       properties: { placeId: id, outsideCore: coverage !== 'core' },
@@ -897,6 +965,7 @@ export function build({ write = true, outDir = OUT } = {}) {
       description: creekDescription(c.name, c.lengthM),
       sourceIds: ['usgs-3dhp-streams'],
     })
+    for (const segmentId of c.ids) addRecord(c.id, 'usgs-3dhp-streams', segmentId)
     waterFeatures.push({
       type: 'Feature',
       properties: { placeId: c.id, outsideCore: coverage !== 'core' },
@@ -912,6 +981,24 @@ export function build({ write = true, outDir = OUT } = {}) {
     idByHuc12,
   )
   const creekLinks = creekRelationships(creeks, relItems)
+
+  // Basin story (#22): the river basin of each watershed, then creek copy from the links, then the Cary two-basin line.
+  const basinById = new Map(watersheds.filter((w) => w.huc6Name).map((w) => [idByHuc12.get(w.huc12), w.huc6Name]))
+  const placeById = new Map(places.map((p) => [p.id, p]))
+  for (const c of creeks) {
+    const own = watershedLinks.relationships.filter((r) => r.from === c.id).sort((a, b) => (b.share ?? 1) - (a.share ?? 1))
+    const greenways = creekLinks.filter((r) => r.basis === 'along' && r.to === c.id).map((r) => placeById.get(r.from)?.name).filter(Boolean)
+    placeById.get(c.id).description = creekCardDescription(c.name, c.lengthM, {
+      watersheds: own.map((r) => ({ name: placeById.get(r.to).name, basin: basinById.get(r.to) })),
+      greenways,
+    })
+  }
+  const caryIds = places.filter((p) => p.municipality === 'Cary' && (p.category === 'park' || p.category === 'trail')).map((p) => p.id)
+  const caryBasinList = cityBasins(caryIds, watershedLinks.relationships, basinById)
+  const caryLine = cityBasinLine('Cary', caryBasinList)
+  const caryLineIds = caryLineWatershedIds(caryLine, caryBasinList)
+  for (const id of caryLineIds) placeById.get(id).description += ` ${caryLine}`
+  console.log(`Cary basins: ${caryBasinList.map((b) => `${b.basin} ${b.links} links in ${b.watersheds.length} watersheds`).join('; ') || 'none'}${caryLine ? '' : ' (no two-basin line)'}`)
 
   for (const p of places) {
     const extra = aliasMap[p.id]
@@ -974,6 +1061,17 @@ export function build({ write = true, outDir = OUT } = {}) {
     })
   }
 
+  if (libraries.length) {
+    sources.push({
+      id: 'wake-libraries',
+      title: title('wake-libraries'),
+      name: 'Wake County GIS',
+      url: libMeta.url,
+      license: 'CC BY 4.0',
+      retrievedAt: libMeta.retrievedAt,
+    })
+  }
+
   if (regionalTrails.length) {
     sources.push({
       id: 'wake-greenways',
@@ -1015,8 +1113,11 @@ export function build({ write = true, outDir = OUT } = {}) {
     greenways: verifiedDate(greenMeta),
     wakeGreenways: verifiedDate(wakeGreenMeta),
     fire: verifiedDate(fireMeta),
-  })
-  const usedSources = new Set(Object.values(details).flatMap((d) => d.fields.map((f) => f.sourceId)))
+    library: verifiedDate(libMeta),
+  }, records)
+  // The same watersheds that carry the Cary line get the Town of Cary learn-more links (detail files only).
+  for (const id of caryLineIds) details[id].references = CARY_BASIN_REFERENCES.map((r) => ({ ...r }))
+  const usedSources = new Set(Object.values(details).flatMap((d) => [...d.fields.map((f) => f.sourceId), ...(d.sourceRecords ?? []).map((r) => r.sourceId)]))
   if (usedSources.has('wake-park-entrances')) {
     sources.push({
       id: 'wake-park-entrances',
@@ -1037,23 +1138,38 @@ export function build({ write = true, outDir = OUT } = {}) {
       retrievedAt: featuresMeta.retrievedAt,
     })
   }
+  // Registry fields for the release manifest (decision 19): credit string, publisher modified date, coverage.
+  const metaBySource = {
+    'cary-parks': parksMeta, 'cary-greenways': greenMeta, 'cary-park-features': featuresMeta, 'wake-parks': wakeMeta,
+    'wake-park-entrances': entrancesMeta, 'wake-fire-stations': fireMeta, 'wake-libraries': libMeta, 'wake-greenways': wakeGreenMeta,
+    'usgs-wbd-huc12': wbdMeta, 'usgs-3dhp-streams': streamsMeta,
+  }
+  for (const s of sources) Object.assign(s, sourceRegistryFields(s.id, metaBySource[s.id]), { licenceStatus: registryLicenceStatus(registry, s.id) })
   const relationships = computeRelationships(relItems.filter((r) => placeIds.has(r.id)))
   const parkIds = new Set(places.filter((p) => p.category === 'park').map((p) => p.id))
   const stationLinks = computeStationLinks(
     relItems.filter((r) => r.kind === 'park' && parkIds.has(r.id)),
     places.filter((p) => p.category === 'fire-station').map((p) => ({ id: p.id, point: p.centroid })),
   )
-  relationships.relationships.push(...watershedLinks.relationships, ...creekLinks, ...stationLinks)
+  const curatedLinks = curatedRelationships(loadCurated(curatedPath), placeIds)
+  relationships.relationships.push(...watershedLinks.relationships, ...creekLinks, ...stationLinks, ...curatedLinks)
   relationships.relationships.sort((x, y) => cmp(x.from, y.from) || cmp(x.to, y.to) || cmp(x.kind, y.kind))
   for (const p of places) {
     const amenities = amenitiesOf(details[p.id].fields)
     if (amenities.length) p.amenities = amenities
   }
   const catalog = { sources, places: places.map(orderPlace) }
+  // Every geometry that reaches a published layer is repaired (after rounding, so rounding collapses are caught too).
+  const sourceOfPlace = new Map(places.map((p) => [p.id, p.sourceIds?.[0]]))
+  const geometryRepair = newReport()
   const layer = (features, decimals) =>
     ({
       type: 'FeatureCollection',
-      features: features.map((f) => ({ ...f, geometry: roundGeometry(f.geometry, decimals) })),
+      features: repairFeatures(
+        features.map((f) => ({ ...f, geometry: roundGeometry(f.geometry, decimals) })),
+        (f) => sourceOfPlace.get(f.properties.placeId),
+        { into: geometryRepair },
+      ).features,
     })
 
   const outputs = {
@@ -1087,8 +1203,10 @@ export function build({ write = true, outDir = OUT } = {}) {
     skipped: { inCary: skippedInCary, outside: skippedOutside, duplicate: skippedDuplicate },
     dedupeSkips,
     trailDedupeSkips,
+    libraries: libraryStats,
     wakeGreenways: { kept: wakeGw.kept, dropped: wakeGw.dropped, skipped: wakeGw.skipped, imported: regionalTrails.length },
     jurisdictionMismatches,
+    geometryRepair,
     ids: allIds,
     creeks: { places: creeks, stats: creekStats, links: creekLinks },
     watersheds: { inScope: watersheds, noCountyArea: inScopeWatersheds.length - watersheds.length, notDetermined: watershedLinks.notDetermined, links: watershedLinks.relationships },
@@ -1114,8 +1232,16 @@ export function joinEntrances(place, ctx, entrances, aliasNames = [], otherNames
   })
 }
 
-/** { [placeId]: { id, fields } } - one detail record per place. */
-export function buildDetails(places, visitCtx, entrances, aliasMap, dates) {
+/** Drops repeats and orders by source id, then record id (numeric ids by value), so the list is stable. */
+export function uniqueRecords(list) {
+  const seen = new Set()
+  return list
+    .filter((r) => !seen.has(`${r.sourceId}\0${r.recordId}`) && seen.add(`${r.sourceId}\0${r.recordId}`))
+    .sort((a, b) => cmp(a.sourceId, b.sourceId) || byRecordId(a.recordId, b.recordId))
+}
+
+/** { [placeId]: { id, fields, sourceRecords? } } - one detail record per place. */
+export function buildDetails(places, visitCtx, entrances, aliasMap, dates, records = new Map()) {
   const out = {}
   const owners = new Map() // normalized name -> ids of the places that carry it
   for (const place of places) {
@@ -1129,6 +1255,9 @@ export function buildDetails(places, visitCtx, entrances, aliasMap, dates) {
     const otherNames = new Set([...owners].filter(([, ids]) => [...ids].some((id) => id !== place.id)).map(([n]) => n))
     const joined = joinEntrances(place, ctx, entrances, aliasMap[place.id] ?? [], otherNames).map((e) => e.properties ?? {})
     out[place.id] = { id: place.id, fields: buildVisitFields({ ...ctx, entrances: joined, dates }) }
+    const list = [...(records.get(place.id) ?? [])]
+    for (const e of joined) if (e.OBJECTID !== null && e.OBJECTID !== undefined) list.push({ sourceId: 'wake-park-entrances', recordId: String(e.OBJECTID) })
+    if (list.length) out[place.id].sourceRecords = uniqueRecords(list)
   }
   return out
 }
@@ -1151,6 +1280,7 @@ function main() {
     return t
   }
   const dropByMiles = [...r.dropped].sort((a, b) => b.miles - a.miles).slice(0, 10)
+  for (const line of formatRepairReport(r.geometryRepair)) console.log(line)
   console.log(`places: ${r.catalog.places.length}`)
   console.log('by category:', tally('category'))
   console.log('by county:', tally('county'))
@@ -1163,7 +1293,7 @@ function main() {
   const none = r.catalog.places.filter((p) => !linkedIds.has(p.id))
   console.log(`places with >=1 link: ${r.catalog.places.length - none.length}/${r.catalog.places.length} (${(((r.catalog.places.length - none.length) / r.catalog.places.length) * 100).toFixed(1)}%), none: ${none.length}`)
   console.log(`nearest-fallback links: ${rl.filter((x) => x.basis === 'nearest').length}`)
-  for (const d of r.dedupeSkips) console.log(`dedupe skip: Wake "${d.name}" == ${d.caryId} (${d.distanceM} m)`)
+  for (const d of r.dedupeSkips) console.log(`dedupe skip: Wake "${d.name}" (OBJECTID ${d.objectId}) == ${d.caryId} (${d.distanceM} m from the polygon)`)
   for (const d of r.trailDedupeSkips) console.log(`dedupe skip: Wake greenway "${d.name}" == ${d.twinId} (${d.distanceM} m)`)
   console.log(`watersheds in scope: ${r.watersheds.inScope.length} (${r.watersheds.noCountyArea} skipped: no area in the three counties); watershed links ${r.watersheds.links.length}; parks/trails not determined ${r.watersheds.notDetermined.length}`)
   console.log(`creeks: ${r.creeks.places.length} places (${r.creeks.stats.grouped} grouped, ${r.creeks.stats.tooShort} under a mile dropped, ${r.creeks.stats.noCountyArea} with no county area); creek links ${r.creeks.links.length} (${r.creeks.links.filter((x) => x.basis === 'along').length} along, ${r.creeks.links.filter((x) => x.kind === 'contained').length} in parks)`)

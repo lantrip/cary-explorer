@@ -30,6 +30,19 @@ afterEach(() => {
 })
 
 describe('parseManifest', () => {
+  it('reads the source registry fields and tolerates their absence', () => {
+    const r = parseManifest(
+      manifest({
+        sources: [
+          { id: 'a', title: 'A dataset', attribution: 'Org (CC0 1.0)', sourceModified: '2026-10-31T23:00:59+00:00', coverage: 'Wake County', ok: true },
+          { id: 'b', ok: true },
+        ],
+      }),
+    )
+    expect(r.sources[0]).toMatchObject({ title: 'A dataset', attribution: 'Org (CC0 1.0)', sourceModified: '2026-10-31T23:00:59+00:00', coverage: 'Wake County' })
+    expect(r.sources[1]).toMatchObject({ id: 'b', title: undefined, coverage: undefined })
+  })
+
   it('accepts the real format and resolves paths under /data/', () => {
     expect(parseManifest(manifest())).toEqual({
       id: '4188bdab5a4741a2',

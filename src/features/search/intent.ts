@@ -20,6 +20,8 @@ export type Intent =
   | { kind: 'category-in-town'; categoryIds: CategoryId[]; townSlug: string }
   | { kind: 'category-near-place'; categoryIds: CategoryId[]; placeId: string }
   | { kind: 'category'; categoryIds: CategoryId[] }
+  /** "which watershed am I in": starts the Near me flow and shows the watershed line. */
+  | { kind: 'my-watershed' }
 
 export interface IntentContext {
   towns: readonly Town[]
@@ -51,6 +53,10 @@ const CATEGORY_WORDS: Readonly<Record<string, CategoryId>> = {
   'fire stations': 'fire-station',
   firehouse: 'fire-station',
   firehouses: 'fire-station',
+  library: 'library',
+  libraries: 'library',
+  'public library': 'library',
+  'public libraries': 'library',
 }
 
 /** Words that may sit between "near this" and the place name ("near this park Bond Park"). */
@@ -113,8 +119,12 @@ function matchPlace(text: string, ctx: IntentContext): Place | null {
   return null
 }
 
+const MY_WATERSHED_PHRASES = new Set(['which watershed am i in', 'what watershed am i in', 'what watershed is this point in'])
+export const MY_WATERSHED_LABEL = 'Find my watershed (uses your location)'
+
 export function parseIntent(text: string, ctx: IntentContext): Intent | null {
   const normalized = normalizeText(text)
+  if (MY_WATERSHED_PHRASES.has(normalized)) return { kind: 'my-watershed' }
   const m = normalized.match(/^(.+?) (in|near) (.+)$/)
   if (!m) {
     // A bare category phrase: shows that category everywhere, switching its layer on if it is off.
@@ -139,6 +149,7 @@ export function categoriesText(categoryIds: readonly CategoryId[]): string {
 
 /** "Show parks in Apex" / "Trails near Walnut Creek Trail"; null if the target no longer resolves. */
 export function intentLabel(intent: Intent, towns: readonly Town[], placesById: ReadonlyMap<string, Place>): string | null {
+  if (intent.kind === 'my-watershed') return MY_WATERSHED_LABEL
   const what = categoriesText(intent.categoryIds)
   if (intent.kind === 'category') return `Show ${what}`
   if (intent.kind === 'category-in-town') {

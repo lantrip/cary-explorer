@@ -2,10 +2,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchBoundedJson, HttpError } from '../../lib/boundedJson'
 import { isRecord } from '../../lib/guards'
+import type { CategoryId } from '../../types/place'
 import { useRelease } from './release'
 import {
   VISIT_FIELD_KEYS,
   type PlaceDetails,
+  type PlaceReference,
+  type PlaceSourceRecord,
   type VisitField,
   type VisitFieldKey,
 } from '../../types/data-model'
@@ -23,6 +26,57 @@ export const isValidPlaceId = (id: unknown): id is string =>
 export const placeDetailsUrl = (base: string, id: string) => `${base}${encodeURIComponent(id)}.json`
 
 const KEY_SET = new Set<string>(VISIT_FIELD_KEYS)
+
+const MAX_SOURCE_RECORDS = 1000
+const MAX_RECORD_ID_LENGTH = 80
+
+/** Keeps well-formed { sourceId, recordId } pairs (strings, no repeats); anything else is dropped. Absent or malformed input gives []. */
+export function parseSourceRecords(raw: unknown): PlaceSourceRecord[] {
+  if (!Array.isArray(raw)) return []
+  const seen = new Set<string>()
+  const out: PlaceSourceRecord[] = []
+  for (const item of raw) {
+    if (out.length >= MAX_SOURCE_RECORDS) break
+    if (!isRecord(item) || typeof item.sourceId !== 'string' || typeof item.recordId !== 'string') continue
+    const sourceId = item.sourceId.trim()
+    const recordId = item.recordId.trim()
+    if (!sourceId || !recordId || recordId.length > MAX_RECORD_ID_LENGTH) continue
+    const k = `${sourceId}\0${recordId}`
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push({ sourceId, recordId })
+  }
+  return out
+}
+
+const MAX_REFERENCES = 10
+const MAX_REFERENCE_TEXT = 120
+const MAX_REFERENCE_URL = 500
+
+/** Keeps references with a non-empty title and publisher and a valid https URL (no repeats); anything else is dropped. Absent or malformed input gives []. */
+export function parseReferences(raw: unknown): PlaceReference[] {
+  if (!Array.isArray(raw)) return []
+  const seen = new Set<string>()
+  const out: PlaceReference[] = []
+  for (const item of raw) {
+    if (out.length >= MAX_REFERENCES) break
+    if (!isRecord(item) || typeof item.title !== 'string' || typeof item.url !== 'string' || typeof item.publisher !== 'string') continue
+    const title = item.title.trim().slice(0, MAX_REFERENCE_TEXT)
+    const publisher = item.publisher.trim().slice(0, MAX_REFERENCE_TEXT)
+    const url = item.url.trim()
+    if (!title || !publisher || url.length > MAX_REFERENCE_URL) continue
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      continue
+    }
+    if (parsed.protocol !== 'https:' || seen.has(url)) continue
+    seen.add(url)
+    out.push({ title, url, publisher })
+  }
+  return out
+}
 
 /** Parses a details payload; unknown keys are dropped and unsourced "known" fields become unknown. */
 export function parsePlaceDetails(raw: unknown, id: string): PlaceDetails | null {
@@ -52,7 +106,14 @@ export function parsePlaceDetails(raw: unknown, id: string): PlaceDetails | null
     const f = byKey.get(k)
     return f ? [f] : []
   })
-  return { id, fields }
+  const sourceRecords = parseSourceRecords(raw.sourceRecords)
+  const references = parseReferences(raw.references)
+  return {
+    id,
+    fields,
+    ...(sourceRecords.length ? { sourceRecords } : {}),
+    ...(references.length ? { references } : {}),
+  }
 }
 
 const dateFormat = new Intl.DateTimeFormat('en-US', {
@@ -172,4 +233,32 @@ export function usePlaceDetails(id: string | null): PlaceDetailsResult {
   return failedId === id
     ? { status: 'error', details: null, retry }
     : { status: 'loading', details: null, retry: noop }
+}
+
+/**
+ * Which visit fields a category's card shows. `keys: 'all'` shows every known field; a list shows only those keys.
+ * `notVerified` adds the "Not verified" list and the wheelchair line, which only make sense for park-like places.
+ */
+interface CardFieldRule {
+  keys: 'all' | readonly VisitFieldKey[]
+  notVerified: boolean
+}
+
+const PARK_RULE: CardFieldRule = { keys: 'all', notVerified: true }
+const CARD_FIELD_RULES: Partial<Record<CategoryId, CardFieldRule>> = {
+  'fire-station': { keys: 'all', notVerified: false },
+  water: { keys: 'all', notVerified: false },
+  library: { keys: ['address', 'hours'], notVerified: false },
+}
+
+const ruleFor = (category: CategoryId): CardFieldRule => CARD_FIELD_RULES[category] ?? PARK_RULE
+
+export const showsParkVisitFields = (category: CategoryId): boolean => ruleFor(category).notVerified
+
+/** The visit fields a card shows for a category: known ones limited to the category's keys, plus the not-verified lists when they apply. */
+export function selectCardFields(category: CategoryId, fields: VisitField[]): SplitFields {
+  const rule = ruleFor(category)
+  const shown = rule.keys === 'all' ? fields : fields.filter((f) => (rule.keys as readonly VisitFieldKey[]).includes(f.key))
+  const split = splitFields(shown)
+  return rule.notVerified ? split : { known: split.known, unknown: [], wheelchairUnknown: false }
 }

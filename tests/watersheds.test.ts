@@ -220,7 +220,7 @@ describe('published data', () => {
     expect(new Set(layer.features.map((f: { properties: { placeId: string } }) => f.properties.placeId))).toEqual(waterIds)
     for (const p of sheds) {
       expect(p.name).toMatch(/watershed$/i)
-      expect(p.description).toMatch(/^Part of the .+ River Basin \(HUC-8 .+\)\.$/)
+      expect(p.description).toMatch(/^Part of the .+ River Basin \(HUC-8 .+\)\./)
     }
   })
   it('gives every catalog park and trail a watershed link, or counts it as not determined', () => {

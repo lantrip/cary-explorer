@@ -9,3 +9,15 @@ export function pickBest<T extends { kind: PickKind }>(hits: readonly T[]): T | 
   for (const h of hits) if (!best || RANK[h.kind] < RANK[best.kind]) best = h
   return best
 }
+
+/**
+ * Is a picked spot "on a place"? Pins, lines and park outlines count. Area features of water places
+ * (the HUC-12 watershed polygons, which cover the whole map) do not, so a long-press on a blank street still picks a point.
+ * `placeId` is the area feature's place; `categoryOf` looks up a place's category.
+ */
+export function isOnPlace(
+  hits: readonly { kind: PickKind; placeId?: string }[],
+  categoryOf: (placeId: string) => string | undefined,
+): boolean {
+  return hits.some((h) => h.kind !== 'area' || h.placeId === undefined || categoryOf(h.placeId) !== 'water')
+}

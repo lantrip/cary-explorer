@@ -1,5 +1,10 @@
 // Types for the helpers that tests import from build-catalog.mjs.
 export type Position = number[]
+export interface SourceRecordRef {
+  sourceId: string
+  recordId: string
+}
+export function uniqueRecords(list: SourceRecordRef[]): SourceRecordRef[]
 export type Ring = Position[]
 export type Polygon = Ring[]
 export function normalize(name: unknown): string
@@ -18,6 +23,7 @@ export interface ParkGroup {
   acres: number
   polygons: Polygon[]
   parcels: number
+  realids: string[]
 }
 export interface GreenwayGroup {
   key: string
@@ -25,6 +31,7 @@ export interface GreenwayGroup {
   miles: number
   lines: Position[][]
   segments: number
+  segmentIds: string[]
 }
 export function groupParks(features: unknown[]): ParkGroup[]
 export function groupGreenways(features: unknown[]): { kept: GreenwayGroup[]; dropped: GreenwayGroup[] }
@@ -46,22 +53,23 @@ export function municipalityOf(
   county: string | undefined,
 ): string
 export function stripJurisdiction(jurisdiction: unknown): string
-export function build(options?: { write?: boolean; outDir?: string }): {
+export function build(options?: { write?: boolean; outDir?: string; curatedPath?: string }): {
   relationships: {
     relationships: { from: string; to: string; kind: string; distanceM?: number; basis?: string }[]
   }
-  dedupeSkips: { name: string; caryId: string; distanceM: number }[]
+  dedupeSkips: { name: string; caryId: string; distanceM: number; objectId: unknown }[]
   trailDedupeSkips: { name: string; twinId: string; distanceM: number }[]
   wakeGreenways: { kept: WakeGreenwayGroup[]; dropped: WakeGreenwayGroup[]; skipped: { cary: number; private: number; unnamed: number; notExisting: number }; imported: number }
   catalog: { sources: unknown[]; places: Record<string, unknown>[] }
   outputs: Record<string, string>
-  details: Record<string, { id: string; fields: import('../lib/visit.mjs').VisitField[] }>
+  details: Record<string, { id: string; fields: import('../lib/visit.mjs').VisitField[]; sourceRecords?: SourceRecordRef[]; references?: { title: string; url: string; publisher: string }[] }>
   parks: ParkGroup[]
   kept: GreenwayGroup[]
   dropped: GreenwayGroup[]
   neighbours: number
   skipped: { inCary: number; outside: number; duplicate: number }
   jurisdictionMismatches: { name: string; jurisdiction: string; municipality: string }[]
+  geometryRepair: import('../lib/repair.mjs').RepairReport
   ids: Record<string, string>
 }
 export function carynUrl(url: unknown): unknown
@@ -69,8 +77,8 @@ export const DEDUPE_M: number
 export function findCaryTwin(
   name: unknown,
   pt: Position,
-  caryNames: { id: string; centroid: Position; names: Set<string> }[],
-): { id: string; centroid: Position; names: Set<string> } | undefined
+  caryNames: { id: string; centroid: Position; names: Set<string>; polygons?: Polygon[] }[],
+): { candidate: { id: string; centroid: Position; names: Set<string>; polygons?: Polygon[] }; distanceM: number } | undefined
 export const ENTRANCE_NAME_MAX_M: number
 export function joinEntrances(
   place: { name: string; aliases?: string[]; centroid: Position },
@@ -85,7 +93,8 @@ export function buildDetails(
   entrances: unknown[],
   aliasMap: Record<string, string[]>,
   dates: { wake?: string; entrances?: string; caryFeatures?: string; greenways?: string; wakeGreenways?: string; fire?: string },
-): Record<string, { id: string; fields: import('../lib/visit.mjs').VisitField[] }>
+  records?: Map<string, SourceRecordRef[]>,
+): Record<string, { id: string; fields: import('../lib/visit.mjs').VisitField[]; sourceRecords?: SourceRecordRef[]; references?: { title: string; url: string; publisher: string }[] }>
 export const WAKE_GREENWAY_SIMPLIFY_M: number
 export function lineLengthM(lines: Position[][]): number
 export function fireStationName(label: unknown): { name: string; stationNumber?: number } | undefined
@@ -111,6 +120,7 @@ export interface WakeGreenwayGroup {
   segments: number
   owners: string[]
   surface: string | undefined
+  objectIds: string[]
 }
 export function groupWakeGreenways(features: unknown[]): {
   kept: WakeGreenwayGroup[]
@@ -123,3 +133,4 @@ export function findTrailTwin(
   candidates: { id: string; centroid: Position; names: Set<string> }[],
 ): { twin: { id: string; centroid: Position; names: Set<string> }; distanceM: number } | undefined
 export function registryTitle(registry: { id: string; title?: string }[], catalogId: string): string
+export function registryLicenceStatus(registry: { id: string; licenceStatus?: string }[], catalogId: string): string

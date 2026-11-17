@@ -29,6 +29,57 @@ export function watershedDescription(w) {
   return `USGS subwatershed ${w.huc12}.`
 }
 
+/**
+ * River basins (HUC-6 names) that the watersheds linked from a city's parks and trails belong to.
+ * `cityIds`: ids of the city's places; `links`: watershed relationships; `basinById`: watershed place id -> basin name.
+ * Returns [{ basin, links, watersheds: [ids] }], most links first (ties by name). Membership counts only.
+ */
+export function cityBasins(cityIds, links, basinById) {
+  const ids = new Set(cityIds)
+  const byBasin = new Map()
+  for (const l of links) {
+    if (!ids.has(l.from)) continue
+    const basin = basinById.get(l.to)
+    if (!basin) continue
+    const e = byBasin.get(basin) ?? { basin, links: 0, watersheds: new Set() }
+    e.links++
+    e.watersheds.add(l.to)
+    byBasin.set(basin, e)
+  }
+  return [...byBasin.values()]
+    .map((e) => ({ ...e, watersheds: [...e.watersheds].sort() }))
+    .sort((a, b) => b.links - a.links || (a.basin < b.basin ? -1 : 1))
+}
+
+/**
+ * Learn-more links shown on the watershed cards that carry the Cary two-basin line (decision 28).
+ * Both Town of Cary pages were checked by hand in a real browser on 2026-11-13 (the town site blocks automated requests).
+ * Titles are our own; no page text is copied.
+ */
+export const CARY_BASIN_REFERENCES = Object.freeze([
+  Object.freeze({
+    title: "Cary's watersheds and river basins",
+    url: 'https://www.carync.gov/services-publications/water-sewer/stormwater-management/education',
+    publisher: 'Town of Cary',
+  }),
+  Object.freeze({
+    title: 'Stream buffer factsheet (PDF)',
+    url: 'https://www.carync.gov/home/showpublisheddocument/29665/638175019926530000',
+    publisher: 'Town of Cary',
+  }),
+])
+
+/** Ids of the watershed places that get the Cary two-basin line (and so the references); empty when there is no line. */
+export function caryLineWatershedIds(caryLine, basins) {
+  return caryLine ? [...new Set(basins.flatMap((b) => b.watersheds))].sort() : []
+}
+
+/** "Cary lies in two river basins, Neuse and Cape Fear." Only when the data shows exactly two basins; otherwise null. */
+export function cityBasinLine(city, basins) {
+  if (basins.length !== 2) return null
+  return `${city} lies in two river basins, ${basins[0].basin} and ${basins[1].basin}.`
+}
+
 /** Joins HUC-12 features with the HUC-8 and HUC-6 name tables. Sorted by huc12. */
 export function mapWatersheds({ huc12, huc8, huc6 }) {
   const names8 = new Map(huc8.features.map((f) => [f.properties.huc8, f.properties.name]))

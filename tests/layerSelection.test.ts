@@ -56,6 +56,11 @@ describe('THEME_DEFAULTS', () => {
     expect(on).not.toContain('proposed-trails')
     expect(on).not.toContain('fire-station')
   })
+  it('turns libraries on by default', () => {
+    expect(defaultLayers(ALL)).toContain('library')
+    expect(LAYER_LABEL.library).toBe('Libraries')
+    expect(LAYER_THEME.library).toBe('art-community')
+  })
   it('gives every layer a theme', () => {
     for (const id of LAYER_IDS) expect(THEME_ORDER).toContain(LAYER_THEME[id])
   })

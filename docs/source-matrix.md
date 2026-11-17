@@ -31,7 +31,7 @@ Short names used in cells: **Wake parks** = Parks in Wake County (292 points, `J
 | Zebulon | [Wake parks][wake-parks] (open). Trails `gap` (no Zebulon-owned segment in [Wake greenways][wake-gw]) | [NC HPO][hpo] (unclear). Town layer `gap` | Birds, region-wide | Wake water | [Wake parks][wake-parks] flags (open). Public art `gap` |
 | Wake Forest | [Wake Forest greenways, 2021][wf-gw] (unclear, stale) · [Wake parks][wake-parks] (open) · [Wake greenways][wake-gw] (open, imported). 2026 town greenways: not inspected (host unreachable, 403) | [Historic Wake Forest sites][wf-hist] (unclear) · [NC HPO][hpo] (unclear) | Birds, region-wide | Wake water | [Wake parks][wake-parks] flags (open). Public art is a web app only, no data layer (`gap`) |
 | Rolesville | [Rolesville trails][rv-trails] (unclear) · [Rolesville park parcels][rv-parcels] (unclear) · [Wake parks][wake-parks] (open) · [Wake greenways][wake-gw] (open, imported) | [NC HPO][hpo] (unclear). Town layer `gap` | Birds, region-wide | Wake water | [Wake parks][wake-parks] flags (open). Public art `gap` |
-| Unincorporated Wake | [Wake parks][wake-parks] (open; 14 with `JURISDICTION` Wake) · [Wake county parks][wake-county] (open) · [Wake entrances][wake-ent] (open) · [Wake greenways][wake-gw] (open, imported: Neuse River Trail, Falls Lake Trail and others). Wake open space: not inspected (host unreachable) [^wakegw] | [NC HPO][hpo] (unclear). County layer `gap` | Birds, region-wide | Wake water (open) | [Wake parks][wake-parks] flags (open) · [Wake libraries][wake-lib] (unclear, not verified). Public art `gap` |
+| Unincorporated Wake | [Wake parks][wake-parks] (open; 14 with `JURISDICTION` Wake) · [Wake county parks][wake-county] (open) · [Wake entrances][wake-ent] (open) · [Wake greenways][wake-gw] (open, imported: Neuse River Trail, Falls Lake Trail and others). Wake open space: Hub export works and the item is CC BY 4.0, not imported (section 11) [^wakegw] | [NC HPO][hpo] (unclear). County layer `gap` | Birds, region-wide | Wake water (open) | [Wake parks][wake-parks] flags (open) · [Wake libraries][wake-lib] (open; imported #125). Public art `gap` |
 | Cary's Chatham part | [Cary greenways][cary-gw] (open; 65 segments mostly here) · [Cary park points][cary-pts] (open; 1 park) · [Cary park polygons][cary-poly] (unclear). Chatham parks layers excluded (section 4) | [NC HPO][hpo] (unclear, Chatham county filter) | Birds, region-wide (Chatham hotspots) | [Chatham hydro lines][chat-hydro] (unclear) · [Cary hydro][cary-hydro] Chatham creeks (unclear) · [USGS NHD][nhd] (open) | `gap` |
 | Cary's Durham part | [Cary greenways][cary-gw] (open; only 4 edge segments touch it). No park feature inside. [Durham Bike & Hike][dur-hb] (unclear): 0 sites inside | [NC HPO][hpo] (unclear, Durham county filter) | Birds, region-wide (Durham hotspots) | [USGS NHD][nhd] (open). Durham hydrology: not inspected (host unreachable) | `gap` |
 
@@ -96,7 +96,7 @@ Duplicate and stale layers that lost to a better one are listed in section 4.
 | wake-county | [County-owned parks][wake-county] | Wake County GIS | [REST][wake-county] | Point | 13 | 2026-09-01 | open (CC BY 4.0) | county-owned only |
 | wake-water | [Water bodies][wake-water] | Wake County GIS | [REST][wake-water] | Polygon | 15,103 | 2020-05-07 | open (CC BY 4.0) | point-in-polygon |
 | wake-blue | [USGS blue-line streams][wake-blue] | Wake County GIS | [REST][wake-blue] | Line | 14,864 | 2026-10-28 | open (CC BY 4.0) | point-in-polygon |
-| wake-lib | [Libraries][wake-lib] | Wake County GIS | [REST][wake-lib] | Point | 23 | 2025 | unclear (item not verified) | point-in-polygon |
+| wake-lib | [Libraries][wake-lib] | Wake County GIS | [REST][wake-lib] | Point | 23 | 2025 | open (CC BY 4.0 in item licenseInfo, checked 2026-11-16) | point-in-polygon. **Imported (#125)** as `library` places (decision 36). Used: `CODE` (id), `LABEL` (name and alias), `TYPE` (description), `STATUS` (skipped when set), `FAC_ADDRESS` and `M_T`, `FRI`, `SAT`, `SUN` (visit info). Kept in the snapshot, not used for the town: `OBJECTID`, `NAME`, `CITY` |
 | wake-fire | [Fire stations][wake-fire] | Wake County GIS | [REST][wake-fire] | Point | 89 (Cary 9) | 2026-10-15 | open (CC BY 4.0 in item `licenseInfo`; copyright text "Wake County GIS") | point-in-polygon (Census places); `CITY` is only the mailing city |
 | hpo | [NC HPO surveyed resources, layer 14][hpo] | NC Dept of Natural and Cultural Resources, HPO | [REST][hpo] | Point | Wake 8,976 / Chatham 888 / Durham 4,020 | monthly (2026-11-03 zip) | unclear (NC.gov disclaimer, no open licence) | `County` field, then point-in-polygon |
 | ebird | [eBird hotspots][ebird] | Cornell Lab of Ornithology | [API][ebird] | Point | Wake 196 / Chatham 63 / Durham 94 | snapshot 2026-11-07 | restricted (non-commercial API terms, key required; see [ebird.md](ebird.md)) | point-in-polygon |
@@ -137,7 +137,7 @@ Duplicate and stale layers that lost to a better one are listed in section 4.
 | chat-bound | [Chatham park boundaries][chat-bound] | Chatham County GIS | [REST][chat-bound] | Polygon | 166 (14 centroids in Cary) | 2026-10-31 | restricted ("Any resale of this data is strictly prohibited"). Excluded | point-in-polygon |
 | dur-hb | [Durham Bike & Hike (HikeBike2026)][dur-hb] | City of Durham GIS | [REST][dur-hb] | Point / line | 20 featured POIs, 45 trailheads, 268 trails, others | 2026-09-01 | unclear (no licence string). Not used until licensed | point-in-polygon |
 
-Other candidates seen but not placed in the matrix (all region-wide, no town field): USGS WBD HUC12 (layer 6, open; now used for watershed places, see decisions 26), USGS 3DHP (open, lowest priority), NC DWR major basins (unclear), NC Highway Historical Markers (1,658 statewide, unclear, geometry split only), Wake hydrolines (113,281, last edit 2016), Wake primary, critical and water-supply watersheds, Wake National Register districts (183, 2018, unclear), Wake police stations (29), Wake park facilities (418 points, 423 lines, 375 polygons).
+Other candidates seen but not placed in the matrix (all region-wide, no town field): USGS WBD HUC12 (layer 6, open; now used for watershed places, see decision 28), USGS 3DHP (open; now used for creek places, see decision 31), NC DWR major basins (unclear), NC Highway Historical Markers (1,658 statewide, unclear, geometry split only), Wake hydrolines (113,281, last edit 2016), Wake primary, critical and water-supply watersheds, Wake National Register districts (183, 2018, unclear), Wake police stations (29), Wake park facilities (418 points, 423 lines, 375 polygons).
 
 ## 4. Overlaps and precedence
 
@@ -216,7 +216,7 @@ From the research notes, to retry from another network:
 - Cary NaturalResources/Hydro layers 0 and 6: count query returned "invalid parameters".
 - Holly Springs Stream Buffers: tiles only, no feature query.
 - StoryMaps and web apps with no REST layer: Knightdale Public Art, Wendell Mural Trail, Wake Forest Public Art, Wake Forest Local Historic District, Holly Springs Black History Tour.
-- NC HPO zip (27 MB) not downloaded; NC DEQ basin page not reached; USGS 3DHP terms page empty.
+- NC HPO zip (27 MB) not downloaded; NC DEQ basin page not reached; USGS 3DHP landing page empty (the service is reached via its MapServer and used since; see decision 31).
 - Not probed for time: Garner proposed greenways, Raleigh drainage basins and stormwater, Wake restrictive covenants layer, Chatham Places for history content, DCHC MPO Durham trails copy, Cary stream gages (275,737 rows may be readings), Cary grade crossings.
 - Cary count fields were not clipped by location for public art, hydro, stormwater and facilities (section 5).
 
@@ -232,7 +232,7 @@ Ask these publishers about reuse terms, most valuable first:
 6. **Town of Apex** (parks, greenways 847, public art 31, National Register structures 176).
 7. **Holly Springs, Wake Forest, Rolesville, Garner, Morrisville** (trails and, for Wake Forest and Holly Springs, history). Small towns, one email each.
 8. **City of Durham GIS** (Bike & Hike services have no licence string; needed for Morrisville's and Raleigh's Durham parts).
-9. **Wake County GIS**: confirm CC BY 4.0 on the library and watershed items (item licence not individually verified) (the Wake Greenways and fire-station items are confirmed CC BY 4.0, see section 9 and decision 32).
+9. **Wake County GIS**: confirm CC BY 4.0 on the watershed item (not individually verified). The library item was confirmed CC BY 4.0 on 2026-11-16 (the Wake Greenways and fire-station items are confirmed CC BY 4.0, see section 9 and decision 32).
 10. **NC DWR / NCDCR gis2 / NC OneMap** (basins, markers, town limits): no copyright text or unconfirmed redistribution terms.
 
 ## 9. Regional trail sources checked for #67
@@ -328,6 +328,21 @@ How the import works: `maps.wake.gov` still times out from this network, so the 
 [chat-parks]: https://gisservices.chathamcountync.gov/opendataagol/rest/services/ReferenceData/Chatham_Parks/MapServer/0
 [chat-bound]: https://gisservices.chathamcountync.gov/opendataagol/rest/services/ReferenceData/Chatham_ParkBoundaries/MapServer/0
 [dur-hb]: https://services2.arcgis.com/G5vR3cOjh6g2Ed8E/arcgis/rest/services/HikeBike2026/FeatureServer
+[gocary-gtfs]: https://gocary.org/_GTFS
+[gotriangle-gtfs]: http://gotriangle.org/gtfs
+[wake-gardens]: https://services1.arcgis.com/a7CWfuGP5ZnLYE7I/arcgis/rest/services/CommunityGardensJan2021/FeatureServer/0
+[cary-trees]: https://maps-apis.carync.gov/server/rest/services/ParksRecreation/CaryTrees/FeatureServer/0
+[nwi]: https://fwspublicservices.wim.usgs.gov/wetlandsmapservice/rest/services/Wetlands/MapServer/0
+[wake-soils]: https://services1.arcgis.com/a7CWfuGP5ZnLYE7I/arcgis/rest/services/WebSoilSurvey/FeatureServer/0
+[wake-geo]: https://services2.arcgis.com/kCu40SDxsCGcuUWO/arcgis/rest/services/WakeCounty_GeologicMap/FeatureServer
+[nconemap-ortho]: https://services.nconemap.gov/secure/rest/services/Imagery/Orthoimagery_Latest_cached/ImageServer
+[wake-ems]: https://services1.arcgis.com/a7CWfuGP5ZnLYE7I/arcgis/rest/services/EMSStations/FeatureServer/0
+[wake-police]: https://services1.arcgis.com/a7CWfuGP5ZnLYE7I/arcgis/rest/services/PoliceDepartments/FeatureServer/0
+[wake-chs]: https://services1.arcgis.com/a7CWfuGP5ZnLYE7I/arcgis/rest/services/County_Facilities_HS/FeatureServer/0
+[wake-muni]: https://services1.arcgis.com/a7CWfuGP5ZnLYE7I/arcgis/rest/services/EasternWakeMunicipalBuildings/FeatureServer/0
+[cary-facpts]: https://maps-apis.carync.gov/server/rest/services/Facilities/Facilities/FeatureServer/0
+[nc-hist]: https://services.nconemap.gov/secure/rest/services/Imagery/Orthoimagery_2010/ImageServer
+[ncnhp-managed]: https://ncnhde.natureserve.org/arcgis/rest/services/NC_Public/Managed_Areas/MapServer/0
 
 ## 10. USGS Watershed Boundary Dataset (#22)
 
@@ -348,5 +363,56 @@ How the import works: `maps.wake.gov` still times out from this network, so the 
 | Licence | The service's own text says: "Use Constraints: None. All data are open and non-proprietary." Registry licence: "Public domain (USGS)"; credit USGS |
 | Choice | 3DHP (the maintained successor) over the legacy NHD flowline layer (`nhd/MapServer/6`, which carries the same text and the same counts in our box). Fields kept: `id3dhp`, `gnisid`, `gnisidlabel`, `featuretypelabel`, `lengthkm`, `featuredate`; the network, level-path and flow-direction fields are not snapshotted |
 | Snapshot | `pipeline/sources/usgs/3dhp-streams/`, 5-decimal geometry, count checked against the service; query `gnisidlabel IS NOT NULL AND featuretypelabel = 'Channel Line'` |
-| Use | 172 creek `water` places (of 296 name groups: 76 under about a mile and 48 with no ground in Wake, Chatham or Durham dropped); lines in `layers/water`. Rule and links in decision 30 |
+| Use | 172 creek `water` places (of 296 name groups: 76 under about a mile and 48 with no ground in Wake, Chatham or Durham dropped); lines in `layers/water`. Rule and links in decision 29 |
 | Known limits | A stream broken by a lake or a gap over 200 m appears as several places of one name. The name is the USGS (GNIS) name: Cary's Black Creek Greenway runs beside the stream USGS calls Coles Branch |
+
+## 11. Source discovery (#50)
+
+Checked on 2026-11-16. This is research only and nothing was imported. Go means the licence is clearly open and the data can be fetched without a key.
+
+| Candidate | Publisher | Type, size | Licence (status) | Fits | Verdict |
+|-----------|-----------|------------|------------------|------|---------|
+| Wake libraries | Wake County GIS | 23 points | CC BY 4.0 in item licenseInfo (open) | civic services | Imported (#125) |
+| [Wake community gardens][wake-gardens] (Jan 2021) | Wake County GIS | 53 points (Cary 9) | none stated (unclear) | nature, food | Licence request. Data is dated 2021 |
+| [GoCary GTFS][gocary-gtfs] | Town of Cary | about 303 stops, 0.5 MB zip | GoTriangle developer page says CC BY 3.0 unless noted, with click-through terms; no licence file in the feed (unclear) | getting around | Licence request (one email to confirm the feed is covered) |
+| [GoTriangle GTFS][gotriangle-gtfs] | GoTriangle | about 496 stops, 1.2 MB | same (unclear) | getting around | Licence request, same ask |
+| GoRaleigh GTFS and bus-stop layer | City of Raleigh | about 1,390 stops | Open Raleigh policy, no named licence (unclear) | getting around | No-go for now. Not Cary-specific |
+| [Cary public trees][cary-trees] | Town of Cary | 2,357 points (species, size, health) | none stated (unclear) | nature | Licence request |
+| Wake canopy 2020 raster | Wake County via Raleigh GIS | raster | "as determined by Wake County" (unclear); host timed out | nature | No-go: raster, unclear, unreachable |
+| NLCD / USFS tree canopy | USGS, USFS | large raster | federal (not verified) | nature | No-go for now: raster only |
+| [National Wetlands Inventory][nwi] | USFWS | polygons, about 2,760 in a Cary-area box, queryable by box | federal, public domain (not read from service metadata; confirm before import) | water, nature | Go, after confirming the stated terms |
+| Cary wetlands (2014) | Town of Cary | 31,765 polygons, 54 MB | none stated (unclear) | water | No-go: old, unclear, and NWI covers it |
+| Cary natural-state preservation easements; Cary river buffers | Town of Cary | small polygon layers | none stated (unclear) | water, nature | Licence request, low priority |
+| [Wake soils][wake-soils] (Web Soil Survey) | Wake County GIS | 24,681 polygons, about 67 MB | CC BY 4.0 (open) | nature, water (hydric soils) | Go. Simplify and clip before shipping |
+| Wake flood-prone soils | Wake County GIS (FEMA-derived) | about 30 MB | CC BY 4.0 (open) | water | Go, lower priority |
+| [Wake geologic map][wake-geo] | NC Geological Survey | polygons plus 2,179 contact lines, about 22 MB | public information, attribution asked, no named licence (unclear) | geology | Licence request (likely fine) |
+| [NC OneMap latest orthoimagery][nconemap-ortho] (cached tiles) | NC OneMap | Web Mercator tile service, 6 in, Jan 2026 | links to a terms page that a script could not read (unclear) | optional aerial layer | Licence request: confirm terms, attribution and tile use in a public app |
+| NAIP imagery | USDA | not assessed | n/a | aerial | Not assessed |
+| Wake open space | Wake County GIS | polygons; Hub GeoJSON export works, REST host does not connect | CC BY 4.0 (open) | parks, nature | Go, with an access filter: some parcels are research or mitigation land, not open to visitors |
+| [NC Natural Heritage managed areas][ncnhp-managed] | NC NHP | 21,523 polygons | citation and notification terms, no open licence (unclear) | conservation | Licence request. If cleared, show public fee-owned land only, never easements |
+| PAD-US public access | USGS | feature service | disclaimer only (unclear) | conservation | Licence request |
+| Wake SWCD conservation easements | Wake SWCD | web map only | none (unclear) | n/a | No-go: private land |
+| JC Raulston Arboretum; Triangle Land Conservancy preserves | NC State; TLC | n/a | no public dataset found | n/a | No source |
+| [Wake EMS stations][wake-ems] | Wake County GIS | 56 points (Cary 5 fixed stations, shared with fire) | CC BY 4.0 in item licenseInfo (open) | civic services | Go. Filter to fixed stations; drop "post" parking spots and offices |
+| [Wake police departments][wake-police] | Wake County GIS | 29 points (Cary 4: main plus 3 substations) | CC BY 4.0 in item licenseInfo (open) | civic services | Go. Covers police and the sheriff's main office only; Cary's own layer is richer but unlicensed |
+| [Cary facility site points][cary-facpts] | Town of Cary | 89 points: 5 community or senior centres, Town Hall A and B, Council Chambers, police Substation 3 | none stated; the item is not readable (unclear) | civic services | Licence request. Best source for Cary community centres and town hall |
+| [Wake human-services facilities][wake-chs] | Wake County | 34 points (Cary 2) | none stated (unclear) | civic services | No-go: county offices, not community centres. No Wake-wide community-centre layer found |
+| [Eastern Wake municipal buildings][wake-muni] | Wake County GIS | 13 points, towns outside Cary | licence text without a named licence (unclear) | civic services | No-go: not Cary |
+| [NC OneMap historical orthoimagery][nc-hist] (1993, 1995 to 2010, 2012 to 2015, 2016 to 2019) | NC OneMap | uncached image services, 0.5 m pixels; export-image works, no XYZ tiles | links to the same unreadable terms page (unclear) | history, optional layer | Licence request (add to the aerial ask). Usable as a dynamic layer; needs a tile proxy or cache to scale |
+| USGS historical aerial photos (EarthExplorer) | USGS EROS | single scanned frames, no tile service | federal; the policy page returned 403 (not verified) | history | No-go: frames need manual georeferencing |
+| Wake County historic imagery | Wake County | no keyless service found | n/a | history | No source |
+
+### Best next imports (when scheduled)
+
+1. Wake open space, with the access filter.
+2. NWI wetlands plus Wake soils.
+3. Wake EMS stations and police departments (CC BY 4.0, filtered to Cary).
+
+### Licence requests to add
+
+- Town of Cary: GoCary GTFS, public trees, easements and river buffers, facility site points.
+- GoTriangle: GTFS.
+- Wake County GIS: community gardens.
+- NC Geological Survey: geologic map.
+- NC OneMap: orthoimagery tiles and the historical image services.
+- NC Natural Heritage Program: managed areas.

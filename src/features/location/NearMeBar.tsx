@@ -1,10 +1,12 @@
 // "Near me" toggle and its status message for the list header. Location is requested only when pressed.
+import { WatershedLine } from '../watersheds/WatershedLine'
 import { NEAR_ME_UNAVAILABLE_TEXT, useLocationStore } from './locationStore'
 
 export function NearMeBar() {
   const status = useLocationStore((s) => s.status)
   const request = useLocationStore((s) => s.request)
   const stop = useLocationStore((s) => s.stop)
+  const coords = useLocationStore((s) => s.coords)
   const on = status === 'on'
   const requesting = status === 'requesting'
   const failed = status === 'denied' || status === 'unavailable' || status === 'error'
@@ -47,6 +49,7 @@ export function NearMeBar() {
               ? 'Sorted by straight-line distance from you.'
               : null}
       </div>
+      {on && <WatershedLine point={coords} />}
     </div>
   )
 }

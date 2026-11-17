@@ -50,6 +50,14 @@ Publish stops if any gate fails:
 
 `pipeline/overrides.json` holds curated descriptions, corrections and amenity or access evidence. A refresh never rewrites it, so curated text survives re-runs.
 
+## Curated relationships
+
+`pipeline/relationships.curated.json` is a hand-maintained array of `{ "from", "to", "note", "source" }`. To add a link, use two place ids from the catalog, one plain sentence in `note`, and an https `source` (a page or document that supports the link). The build emits it as a `curated` relationship and fails with a message naming the entry if an id is unknown, `from` equals `to`, a pair appears twice (either order), or `source` is missing or not https. The file ships as `[]`; do not add a link without a source. See decision 29.
+
+## Source records
+
+Each `places/<id>.json` has `sourceRecords`: `{ sourceId, recordId }` for every source record behind the place (Cary parcel `realid`, Cary greenway `segmentid`, Wake `OBJECTID`, fire `STATIONID`, watershed `huc12`, stream `id3dhp`). A Wake park is merged into a Cary park only when the names match and the Wake point is inside, or within 50 m of, the Cary polygon. See decision 29.
+
 ## Staging and publish
 
 `data:build` writes to `pipeline/.staging/`. `data:publish` validates, then writes into `public/data/`:
@@ -68,6 +76,10 @@ Every feature in `layers/greenways.<h>.geojson` has `{ placeId, status, outsideC
 
 `wake/greenways` (Wake County, CC BY 4.0) feeds trail places outside Cary. `build-catalog.mjs` leaves out Cary-owned and private segments, groups the rest by `TRAIL_NAME` (else `CORRIDOR_NAME`), keeps groups of at least 0.5 mi that are not connectors, street-side paths or street names, and skips a trail whose name matches an existing place with a vertex within 1 km of it (logged as `dedupe skip: Wake greenway ...`). Kept trails become `wake-greenway-<slug>` places (category `trail`, town by Census place point-in-polygon) and `existing` features in the greenways layer, simplified to 5 m (`WAKE_GREENWAY_SIMPLIFY_M`) to stay inside the layer budget. Park entrances are not turned into places.
 
+## Wake libraries
+
+`wake/libraries` (Wake County GIS, CC BY 4.0) feeds one `library` place per branch in the core or nearby area (id `wake-library-<CODE>`, decision 36). Any feature with a non-empty `STATUS` is skipped and counted in the build log. The card shows address and posted hours only; no relationships are built.
+
 ## Size budgets
 
 `pipeline/budgets.json` holds gzipped byte limits (manifest, catalog, relationships, each layer, each place file, initial data, largest JS bundle). `npm run check:budgets` prints a table and fails when anything is over; CI runs it after the build. See `docs/performance.md`.
@@ -78,7 +90,18 @@ Every feature in `layers/greenways.<h>.geojson` has `{ placeId, status, outsideC
 
 ## Manifest
 
-`public/data/manifest.json` records the release version, what it was built from, an `artifacts` block (`catalog`, `relationships`, `layers`, `places` paths relative to `public/data/`), and for each source: record count, `retrievedAt`, licence, licence status, last successful refresh and `ok`. Each source also has `cadence` and `cadenceDays` (from the registry; 7 weekly, 31 monthly) so staleness is worked out at view time from `lastSuccess`, never at publish. Older manifests without them still load and are never reported stale.
+`public/data/manifest.json` records the release version, what it was built from, an `artifacts` block (`catalog`, `relationships`, `layers`, `places` paths relative to `public/data/`), and one `sources` entry per source used in the catalog. Each entry has:
+
+- `id` and `title` (the registry's dataset title)
+- `attribution` (the snapshot's credit string) and `licence`
+- `licenceStatus` (the configured status from `pipeline/sources.config.json`; every published source is `open`)
+- `sourceModified` (the publisher's modified date, when the snapshot has one)
+- `retrievedAt`, `lastSuccess` and `ok`
+- `coverage` (a short factual line, such as "Town of Cary")
+- `recordCount` (the places the source lists or supplies; see decision 34)
+- `cadence` and `cadenceDays` (from the registry; 7 weekly, 31 monthly), so staleness is worked out at view time from `lastSuccess`, never at publish. Older manifests without them still load and are never reported stale.
+
+The registry fields and the geometry repair log are explained in `docs/decisions.md` 34.
 
 ## Weekly workflow
 

@@ -1,0 +1,25 @@
+{
+  "sourceId": "wake-libraries",
+  "url": "https://services1.arcgis.com/a7CWfuGP5ZnLYE7I/arcgis/rest/services/Libraries/FeatureServer/0",
+  "licence": "CC-BY-4.0",
+  "licenceStatus": "open",
+  "attribution": "Wake County GIS (CC BY 4.0)",
+  "retrievedAt": "2026-11-16T17:22:58.207Z",
+  "sourceModified": "2025-03-03T14:23:21.972Z",
+  "recordCount": 23,
+  "expectedCount": 23,
+  "fields": [
+    "OBJECTID",
+    "CODE",
+    "NAME",
+    "LABEL",
+    "FAC_ADDRESS",
+    "CITY",
+    "TYPE",
+    "STATUS",
+    "M_T",
+    "FRI",
+    "SAT",
+    "SUN"
+  ]
+}

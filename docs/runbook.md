@@ -10,6 +10,21 @@ What to do when the data pipeline or the app misbehaves. Background: `docs/decis
 | Hosting, CDN, deployment, server logs, transfer cost | The hosting team (not this repo) |
 | Remote error reporting and any backend | Waits on #16 and the hosting team |
 
+## Geometry repairs in the build log
+
+The build log lists geometry repairs and self-intersections per source (`docs/decisions.md` 34). `cary-park-thomas-e-brooks-park` has a known sub-square-metre sliver that is kept as published, so any NEW self-intersection in the log should be checked before publishing.
+
+## Re-checking the Cary "Learn more" links
+
+The 7 Cary watershed cards show two Town of Cary links. The URLs are set in `CARY_BASIN_REFERENCES` in `pipeline/lib/watersheds.mjs` (background: `docs/decisions.md` 28, #22). The build cannot check these links, because `carync.gov` refuses scripted requests (HTTP 403). Check them by hand in a normal browser before each public release, and whenever someone reports a dead link.
+
+1. Open both URLs from `CARY_BASIN_REFERENCES` in a browser.
+2. Confirm the stormwater education page still says Cary lies in the Neuse and Cape Fear basins, and that the PDF is still the riparian and urban transition buffer factsheet.
+3. If a link moved, update the URL in `CARY_BASIN_REFERENCES`, run `npm run data:build` and then `npm run data:publish`, and note the new check date in the decisions entry.
+4. If a page is gone with no replacement, remove that entry so the card stops linking to it.
+
+Do not paste the full URLs here. Point to the constant instead, so the URLs live in one place.
+
 ## A refresh failed
 
 The weekly `Data refresh` workflow (Mondays 09:00 UTC) opens a GitHub issue titled **Data refresh failed** (label `data-refresh`). If one is already open it adds a comment instead, so there is never more than one. The issue gives the run URL, the failed step and a pointer here. A failed run publishes nothing: the last good release stays live.
@@ -44,7 +59,9 @@ The manifest records each source's `lastSuccess`, `cadence` and `cadenceDays`. T
 
 Between the cadence and the end of the margin a source is "due" (not an alert). Past the margin it is "stale": the credits dialog shows "Older than expected" on that row and place cards that use it say "Some source data is older than expected." Manifests without `cadenceDays` (older releases) are never reported stale.
 
-Sources with a count check: `wake-fire-stations` (Wake County fire stations, monthly, snapshot in `pipeline/sources/wake/fire-stations/`, 89 places in the published catalog, shown as the "Community services" layer). The count gate stops a publish if the record count moves by more than 30% (see "Overrides"); check that Wake County has really added or closed stations before using `PIPELINE_ALLOW_COUNT_CHANGE=wake-fire-stations`.
+Sources with a count check: the USGS sources `usgs-wbd-huc12`, `usgs-wbd-huc8`, `usgs-wbd-huc6` and `usgs-3dhp-streams` (ArcGIS adapter, same snapshot count check; see the USGS paragraph below), and `wake-fire-stations` (Wake County fire stations, monthly, snapshot in `pipeline/sources/wake/fire-stations/`, 89 places in the published catalog, shown as the "Community services" layer). The count gate stops a publish if the record count moves by more than 30% (see "Overrides"); check that Wake County has really added or closed stations before using `PIPELINE_ALLOW_COUNT_CHANGE=wake-fire-stations`.
+
+USGS watershed and creek sources, all open (public domain) and monthly in `pipeline/sources.config.json`: `usgs-wbd-huc12` (HUC-12 units, snapshot `pipeline/sources/usgs/wbd-huc12/`, 108 units in the buffer box), with its name tables `usgs-wbd-huc8` (`pipeline/sources/usgs/wbd-huc8/`, 7 records) and `usgs-wbd-huc6` (`pipeline/sources/usgs/wbd-huc6/`, 3 records); and `usgs-3dhp-streams` (named `Channel Line` features, snapshot `pipeline/sources/usgs/3dhp-streams/`, 4,231 records). Each snapshot fails if the features fetched differ from the service count. The publish gate in `pipeline/lib/validate.mjs` applies to them as to every source: a record count that moves by more than 30% against the previous manifest blocks the publish unless the id is listed in `PIPELINE_ALLOW_COUNT_CHANGE`. The published catalog has 57 watersheds (HUC-12 units that touch the nearby area and have ground in Wake, Chatham or Durham) and 172 creeks (named streams of at least about one mile in the area); check both counts after a refresh.
 
 When it fires:
 

@@ -21,6 +21,11 @@ export function simplifyCreekLines(lines: Position[][], toleranceM?: number): Po
 export function midpoint(line: Position[]): Position
 export function creekPin(lines: Position[][], allowed: (p: Position) => boolean): Position | null
 export function creekDescription(name: string, lengthM: number): string
+export function creekCardDescription(
+  name: string,
+  lengthM: number,
+  ctx?: { watersheds?: { name: string; basin?: string }[]; greenways?: string[] },
+): string
 export function alongLengthM(trailLines: Position[][], creekLines: Position[][], bufferM?: number): number
 export interface CreekLink {
   from: string

@@ -26,10 +26,19 @@ function* positions(coords) {
   else if (Array.isArray(coords)) for (const c of coords) yield* positions(c)
 }
 
-/** Places per source id (the basis for manifest recordCount and the count-change gate). */
-export function countBySource(catalog) {
+/**
+ * Places per source id (the basis for manifest recordCount and the count-change gate). A place counts for a source when
+ * the catalog lists it in the place's sourceIds, or when the place's detail file cites it in a field or a source record
+ * (a source such as cary-park-features supplies visit fields to parks and is never a place's primary source). Each place
+ * counts once per source.
+ */
+export function countBySource(catalog, details = {}) {
   const counts = Object.fromEntries((catalog.sources ?? []).map((s) => [s.id, 0]))
-  for (const p of catalog.places ?? []) for (const id of p.sourceIds ?? []) counts[id] = (counts[id] ?? 0) + 1
+  for (const p of catalog.places ?? []) {
+    const d = details?.[p.id]
+    const cited = [...(d?.fields ?? []).map((f) => f.sourceId), ...(d?.sourceRecords ?? []).map((r) => r.sourceId)]
+    for (const id of new Set([...(p.sourceIds ?? []), ...cited].filter(Boolean))) counts[id] = (counts[id] ?? 0) + 1
+  }
   return counts
 }
 
@@ -138,7 +147,7 @@ export function validateRelease({
   const allowed = new Set(
     String(env?.PIPELINE_ALLOW_COUNT_CHANGE ?? '').split(',').map((s) => s.trim()).filter(Boolean),
   )
-  const counts = countBySource(catalog ?? {})
+  const counts = countBySource(catalog ?? {}, details ?? {})
   for (const prev of previousManifest?.sources ?? []) {
     if (!(prev.recordCount > 0) || counts[prev.id] === undefined) continue
     const change = (counts[prev.id] - prev.recordCount) / prev.recordCount

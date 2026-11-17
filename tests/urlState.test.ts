@@ -50,6 +50,27 @@ describe('round trip', () => {
   })
 })
 
+describe('amenity filters', () => {
+  it('round-trips amenities together with the other params', () => {
+    const state: UrlState = {
+      ...base,
+      place: 'a-1',
+      themes: ['water'],
+      amenities: ['restrooms', 'parking'],
+      town: 'apex',
+      map: { zoom: 14, lat: 35.8, lon: -78.7 },
+    }
+    const search = serializeUrlState(state)
+    expect(search).toContain('amenities=restrooms,parking')
+    expect(parseUrlState(search)).toMatchObject({ amenities: ['restrooms', 'parking'], place: 'a-1', themes: ['water'], town: 'apex' })
+  })
+  it('omits empty amenities and drops unknown ones', () => {
+    expect(serializeUrlState({ ...base, amenities: [] })).toBe('')
+    expect(parseUrlState('?amenities=bogus').amenities).toBeUndefined()
+    expect(parseUrlState('?amenities=parking,bogus').amenities).toEqual(['parking'])
+  })
+})
+
 describe('parseUrlState validation', () => {
   it('returns nothing for empty or garbage input', () => {
     expect(parseUrlState('')).toEqual({})

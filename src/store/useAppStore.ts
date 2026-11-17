@@ -71,9 +71,11 @@ interface AppState {
   dismissMissingPlace: () => void
   applyUrlState: (apply: UrlApply) => void
   setSelectedPlaceId: (id: string | null) => void
-  // Temporary pin from coordinate search; never a place, not in the URL, cleared when a place is selected.
+  // Temporary pin from coordinate search or a long-press on the map; never a place, not in the URL, cleared when a place is selected.
   droppedPin: { lat: number; lon: number } | null
   setDroppedPin: (pin: { lat: number; lon: number } | null) => void
+  // Show a point (typed coordinates or a spot picked on the map); `recenter` also moves the camera to it.
+  showPoint: (pin: { lat: number; lon: number }, recenter: boolean, zoom?: number) => void
   setActiveThemes: (themes: ThemeId[]) => void
   toggleTheme: (id: ThemeId) => void
   setLayer: (id: LayerId, on: boolean) => void
@@ -95,6 +97,11 @@ export const useAppStore = create<AppState>()((set) => ({
   selectedPlaceId: null,
   droppedPin: null,
   setDroppedPin: (droppedPin) => set({ droppedPin }),
+  showPoint: (pin, recenter, zoom = 16) =>
+    set((s) => ({
+      droppedPin: pin,
+      ...(recenter ? { cameraRequest: { center: [pin.lon, pin.lat] as [number, number], zoom, seq: (s.cameraRequest?.seq ?? 0) + 1 } } : {}),
+    })),
   activeThemes: THEMES.map((t) => t.id),
   layerOverrides: {},
   amenityFilters: [],

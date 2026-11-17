@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { resetRelease } from '../src/features/places/release'
 import type { Catalog } from '../src/features/places/catalog'
 import { createCatalogStore, type CatalogLoader } from '../src/features/places/catalogStore'
 import { CATEGORY_THEME } from '../src/features/themes/themes'
@@ -235,6 +236,100 @@ describe('catalog store', () => {
       expect(calls[1].signal.aborted).toBe(true)
       expect(store.getSnapshot().status).toBe('ready')
       expect(store.getSnapshot().places).toBe(ready.places)
+    })
+  })
+
+  // Pre-launch check: blocked/500/slow/garbled data files, driven through the real default loader
+  // (manifest, then catalog) with only fetch stubbed.
+  describe('default loader with a failing network', () => {
+    const MANIFEST = {
+      version: 'abcdef0123456789',
+      artifacts: { catalog: 'catalog.abc.json', relationships: 'rel.abc.json', places: 'places/' },
+    }
+    const ok = (body: unknown) => new Response(JSON.stringify(body))
+    const url = (input: unknown) => String(input)
+
+    afterEach(() => {
+      vi.useRealTimers()
+      vi.unstubAllGlobals()
+      resetRelease()
+    })
+
+    async function failedStore(manifest: () => Promise<Response>, cat: () => Promise<Response>) {
+      resetRelease()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((input: unknown) => (url(input).includes('manifest') ? manifest() : cat())),
+      )
+      const store = createCatalogStore()
+      const unsubscribe = store.subscribe(() => {})
+      store.ensureLoaded()
+      return { store, unsubscribe }
+    }
+
+    const cases: [string, number][] = [
+      ['404', 404],
+      ['500', 500],
+    ]
+    for (const [name, status] of cases) {
+      it(`ends in error with no data when catalog.json returns ${name}`, async () => {
+        const { store, unsubscribe } = await failedStore(
+          async () => ok(MANIFEST),
+          async () => new Response('nope', { status }),
+        )
+        await vi.waitFor(() => expect(store.getSnapshot().status).toBe('error'))
+        expect(store.getSnapshot().error).toBe(`Catalog request failed (${status}).`)
+        expect(store.getSnapshot().places).toHaveLength(0)
+        expect(store.getSnapshot().sources).toHaveLength(0)
+        unsubscribe()
+      })
+
+      it(`ends in error with no data when the manifest returns ${name}`, async () => {
+        const { store, unsubscribe } = await failedStore(
+          async () => new Response('nope', { status }),
+          async () => ok(catalog()),
+        )
+        await vi.waitFor(() => expect(store.getSnapshot().status).toBe('error'))
+        expect(store.getSnapshot().error).toBe(`Manifest request failed (${status}).`)
+        expect(store.getSnapshot().places).toHaveLength(0)
+        unsubscribe()
+      })
+    }
+
+    it('ends in error with no data when catalog.json is not valid JSON', async () => {
+      const { store, unsubscribe } = await failedStore(
+        async () => ok(MANIFEST),
+        async () => new Response('<html>blocked by proxy</html>'),
+      )
+      await vi.waitFor(() => expect(store.getSnapshot().status).toBe('error'))
+      expect(store.getSnapshot().error).toBeTruthy()
+      expect(store.getSnapshot().places).toHaveLength(0)
+      expect(store.getSnapshot().sources).toHaveLength(0)
+      unsubscribe()
+    })
+
+    it('times out a catalog request that never answers and ends in error', async () => {
+      vi.useFakeTimers()
+      const hang = (_: unknown, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+        })
+      resetRelease()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((input: unknown, init?: RequestInit) =>
+          url(input).includes('manifest') ? Promise.resolve(ok(MANIFEST)) : hang(input, init),
+        ),
+      )
+      const store = createCatalogStore()
+      const unsubscribe = store.subscribe(() => {})
+      store.ensureLoaded()
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(store.getSnapshot().status).toBe('loading') // still waiting, not failed early
+      await vi.advanceTimersByTimeAsync(20_000)
+      expect(store.getSnapshot()).toMatchObject({ status: 'error', error: 'Catalog request timed out.' })
+      expect(store.getSnapshot().places).toHaveLength(0)
+      unsubscribe()
     })
   })
 })

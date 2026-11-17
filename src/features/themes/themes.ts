@@ -30,6 +30,7 @@ export const CATEGORY_THEME: Record<CategoryId, ThemeId> = {
   art: 'art-community',
   community: 'art-community',
   'fire-station': 'art-community',
+  library: 'art-community',
 }
 
 export const categoryLabel: Record<CategoryId, string> = {
@@ -41,4 +42,5 @@ export const categoryLabel: Record<CategoryId, string> = {
   art: 'Art',
   community: 'Community',
   'fire-station': 'Fire station',
+  library: 'Library',
 }

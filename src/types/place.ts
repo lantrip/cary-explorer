@@ -10,6 +10,7 @@ export type CategoryId =
   | 'art'
   | 'community'
   | 'fire-station'
+  | 'library'
 
 /** Visit fields a place can be filtered by; present only when the field is known with a source. */
 export type AmenityKey =

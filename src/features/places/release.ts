@@ -11,8 +11,16 @@ const PATH_PATTERN = /^[a-z0-9][a-z0-9._/-]*$/
 /** One source as the pipeline recorded it in the manifest (the Credits page reads this). */
 export interface ManifestSource {
   id: string
+  /** Dataset title (source registry, #19). */
+  title?: string
+  /** The credit string for this source, from its snapshot. */
+  attribution?: string
   recordCount?: number
   retrievedAt?: string
+  /** When the publisher last modified the dataset; absent when the snapshot does not say. */
+  sourceModified?: string
+  /** Short factual area string, for example "Wake County". */
+  coverage?: string
   licence?: string
   licenceStatus?: string
   lastSuccess?: string
@@ -62,6 +70,10 @@ function parseSources(raw: unknown): ManifestSource[] {
     if (!isRecord(item) || typeof item.id !== 'string' || !item.id) continue
     out.push({
       id: item.id,
+      title: optString(item.title),
+      attribution: optString(item.attribution),
+      sourceModified: optString(item.sourceModified),
+      coverage: optString(item.coverage),
       recordCount:
         typeof item.recordCount === 'number' && Number.isFinite(item.recordCount) ? item.recordCount : undefined,
       retrievedAt: optString(item.retrievedAt),

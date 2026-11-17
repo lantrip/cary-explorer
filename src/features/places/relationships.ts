@@ -82,12 +82,21 @@ function formatMiles(distanceM: number): string {
   return `${miles.toFixed(1)} mi`
 }
 
+/** The river basin a watershed place is part of, read from its description ("Part of the Neuse River Basin ..."); null if absent. */
+export function basinOf(watershed: Place): string | null {
+  return /\bthe (.+?) River Basin\b/.exec(watershed.description)?.[1] ?? null
+}
+
 function labelFor(rel: ReleasedRelationship, placeId: string, other: Place, self?: Place): string {
   if (rel.kind === 'contained' && rel.basis === 'watershed') {
     // Boundary membership only; never a flow or downstream claim.
     // A trail that crosses several watersheds carries `share` on each link; one watershed keeps "In the".
     const name = other.name.replace(/ watershed$/i, '')
-    if (rel.from === placeId) return rel.share === undefined ? `In the ${name} watershed` : `Passes through the ${name} watershed`
+    if (rel.from === placeId) {
+      const basin = basinOf(other)
+      const line = rel.share === undefined ? `In the ${name} watershed` : `Passes through the ${name} watershed`
+      return basin ? `${line} \u00b7 ${basin} basin` : line
+    }
     return other.category === 'trail' || isCreek(other) ? `${other.name} passes through this watershed` : `${other.name} is in this watershed`
   }
   if (rel.basis === 'along') {
@@ -192,6 +201,16 @@ export function moreWatershedsNote(
 ): string | null {
   const extra = watershedLinksOf(placeId, index, placesById).length - 1
   return extra >= 1 ? `and ${extra} more ${extra === 1 ? 'watershed' : 'watersheds'}` : null
+}
+
+/** True for a park or trail with no watershed link: the card says so instead of staying silent. */
+export function watershedNotDetermined(
+  placeId: string,
+  index: RelationshipIndex,
+  placesById: ReadonlyMap<string, Place>,
+): boolean {
+  const cat = placesById.get(placeId)?.category
+  return (cat === 'park' || cat === 'trail') && watershedLinksOf(placeId, index, placesById).length === 0
 }
 
 let shared: Promise<RelationshipIndex> | null = null

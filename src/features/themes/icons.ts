@@ -12,6 +12,7 @@ export const CATEGORY_ICON: Record<CategoryId, string> = {
   community:
     'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M17 11a2.5 2.5 0 1 0 0-5 M3 20c0-3 3-5 6-5s6 2 6 5 M15 15c3 0 6 1.5 6 5',
   'fire-station': 'M12 3c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 0-8z M5 21h14',
+  library: 'M4 5a1 1 0 0 1 1-1h5a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z M20 5a1 1 0 0 0-1-1h-5a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z',
 }
 
 /** Shared SVG root attributes for category icons (React prop names). */

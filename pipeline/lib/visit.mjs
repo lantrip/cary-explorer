@@ -63,6 +63,7 @@ export const SRC_CARY_FEATURES = 'cary-park-features'
 export const SRC_CARY_GREENWAYS = 'cary-greenways'
 export const SRC_WAKE_GREENWAYS = 'wake-greenways'
 export const SRC_WAKE_FIRE = 'wake-fire-stations'
+export const SRC_WAKE_LIBRARIES = 'wake-libraries'
 
 const PAVED = new Set(['asphalt', 'concrete'])
 
@@ -204,6 +205,7 @@ export function describeWakeAccessibility(segments) {
  * Build the 14 visit fields for one place.
  * ctx: {
  *   wake?: Wake parks properties (wake-park-* places),
+ *   library?: { address, hours } for wake-library-* places,
  *   fire?: { address } for wake-fire-* places (the only visit field a fire station has),
  *   caryPoints?: Cary park feature-map properties inside the park (cary-park-* places),
  *   entrances?: joined Wake park-entrance properties,
@@ -212,7 +214,7 @@ export function describeWakeAccessibility(segments) {
  * }
  */
 export function buildVisitFields(ctx = {}) {
-  const { wake, fire, caryPoints = [], entrances = [], segments = [], wakeSegments, dates = {} } = ctx
+  const { wake, fire, library, caryPoints = [], entrances = [], segments = [], wakeSegments, dates = {} } = ctx
   const label = Object.fromEntries(VISIT_FIELDS)
   const out = {}
   const set = (key, value, sourceId, date) => {
@@ -221,6 +223,7 @@ export function buildVisitFields(ctx = {}) {
 
   // address
   if (fire) set('address', text(fire.address), SRC_WAKE_FIRE, dates.fire)
+  else if (library) set('address', text(library.address), SRC_WAKE_LIBRARIES, dates.library)
   else if (wake) set('address', wakeAddress(wake), SRC_WAKE_PARKS, dates.wake)
   else set('address', consensus(entrances.map((e) => wakeAddress(e))), SRC_WAKE_ENTRANCES, dates.entrances)
 
@@ -263,6 +266,7 @@ export function buildVisitFields(ctx = {}) {
 
   // no source for these yet
   for (const key of ['stepsSlope', 'hours', 'water']) set(key, undefined)
+  if (library) set('hours', text(library.hours), SRC_WAKE_LIBRARIES, dates.library)
 
   return VISIT_KEYS.map((k) => out[k])
 }
@@ -299,6 +303,49 @@ export function validateDetail(detail, placeId, sourceIds) {
         errors.push(`${w}: wake-greenways may back wheelchair access only with an affirmative "Accessible" value`)
       }
     } else errors.push(`${w}: status must be "known" or "unknown"`)
+  }
+  // Optional list of contributing source records: { sourceId, recordId } pairs, each a catalog source, no repeats.
+  if (detail.sourceRecords !== undefined) {
+    if (!Array.isArray(detail.sourceRecords) || detail.sourceRecords.length === 0) {
+      errors.push(`${at}: sourceRecords must be a non-empty array when present`)
+    } else {
+      const seen = new Set()
+      for (const r of detail.sourceRecords) {
+        if (!r || typeof r.sourceId !== 'string' || !r.sourceId || typeof r.recordId !== 'string' || !r.recordId.trim()) {
+          errors.push(`${at}: sourceRecords entries need a sourceId and a recordId (strings)`)
+          continue
+        }
+        if (sourceIds && !sourceIds.has(r.sourceId)) errors.push(`${at}: sourceRecords sourceId "${r.sourceId}" is not a catalog source`)
+        const k = `${r.sourceId}\0${r.recordId}`
+        if (seen.has(k)) errors.push(`${at}: sourceRecords repeats ${r.sourceId} ${r.recordId}`)
+        seen.add(k)
+      }
+    }
+  }
+  // Optional learn-more links: { title, url, publisher }, https only, no repeats.
+  if (detail.references !== undefined) {
+    if (!Array.isArray(detail.references) || detail.references.length === 0) {
+      errors.push(`${at}: references must be a non-empty array when present`)
+    } else {
+      const seen = new Set()
+      for (const r of detail.references) {
+        const title = typeof r?.title === 'string' ? r.title.trim() : ''
+        const publisher = typeof r?.publisher === 'string' ? r.publisher.trim() : ''
+        if (!title || !publisher) {
+          errors.push(`${at}: references entries need a title and a publisher (strings)`)
+          continue
+        }
+        let ok = false
+        try {
+          ok = typeof r.url === 'string' && new URL(r.url).protocol === 'https:'
+        } catch {
+          ok = false
+        }
+        if (!ok) errors.push(`${at}: reference "${title}" needs an https url`)
+        else if (seen.has(r.url)) errors.push(`${at}: references repeats ${r.url}`)
+        else seen.add(r.url)
+      }
+    }
   }
   return errors
 }

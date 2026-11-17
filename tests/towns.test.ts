@@ -83,14 +83,18 @@ describe('ArcGIS where option', () => {
 })
 
 describe('Wake duplicate of a Cary park', () => {
-  const cary = [{ id: 'cary-park-x', centroid: [-78.8, 35.8], names: new Set(['x trailhead park', 'x tp']) }]
-  it('skips a Wake park with the same name within 1 km', () => {
-    expect(findCaryTwin('X Trailhead  Park', [-78.8, 35.805], cary)?.id).toBe('cary-park-x')
-    expect(findCaryTwin('X TP', [-78.8, 35.805], cary)?.id).toBe('cary-park-x')
+  // A park about 0.02 degrees square (roughly 2 km) around the centroid.
+  const ring = [[-78.81, 35.79], [-78.79, 35.79], [-78.79, 35.81], [-78.81, 35.81], [-78.81, 35.79]]
+  const cary = [{ id: 'cary-park-x', centroid: [-78.8, 35.8], polygons: [[ring]], names: new Set(['x trailhead park', 'x tp']) }]
+  it('skips a Wake park with the same name whose point lies inside the Cary polygon', () => {
+    expect(findCaryTwin('X Trailhead  Park', [-78.8, 35.805], cary)?.candidate.id).toBe('cary-park-x')
+    expect(findCaryTwin('X TP', [-78.8, 35.805], cary)?.candidate.id).toBe('cary-park-x')
   })
-  it('keeps it when the names differ or the parks are far apart', () => {
+  it('keeps it when the names differ or the point is outside the polygon, however near', () => {
     expect(findCaryTwin('Y Park', [-78.8, 35.8], cary)).toBeUndefined()
     expect(findCaryTwin('X Trailhead Park', [-78.8, 35.82], cary)).toBeUndefined()
+    // same name, 300 m outside the polygon (inside the old 1 km rule's reach): no longer a merge
+    expect(findCaryTwin('X Trailhead Park', [-78.79, 35.81 + 0.0027], cary)).toBeUndefined()
   })
   it('drops the New Hope Church Road Trailhead duplicate from the real build', () => {
     const { catalog, dedupeSkips } = builtCatalog()

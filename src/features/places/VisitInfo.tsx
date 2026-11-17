@@ -2,8 +2,8 @@
 import type { ReactNode } from 'react'
 import type { Place, Source } from '../../types/place'
 import type { VisitFieldKey } from '../../types/data-model'
-import { ACTION_BUTTON } from '../../lib/styles'
-import { formatVerifiedDate, splitFields, usePlaceDetails } from './placeDetails'
+import { ACTION_BUTTON, TEXT_LINK } from '../../lib/styles'
+import { formatVerifiedDate, selectCardFields, showsParkVisitFields, usePlaceDetails } from './placeDetails'
 
 const ICON_PROPS = {
   'aria-hidden': true,
@@ -48,76 +48,101 @@ interface VisitInfoProps {
 
 export function VisitInfo({ place, sources }: VisitInfoProps) {
   const { status, details, retry } = usePlaceDetails(place.id)
-  const split = details ? splitFields(details.fields) : null
+  const split = details ? selectCardFields(place.category, details.fields) : null
   const hasKnownAddress = split?.known.some((f) => f.key === 'address') ?? false
   const headingId = `place-${place.id}-visit`
 
+  const references = details?.references ?? []
+
   return (
-    <section aria-labelledby={headingId} className="space-y-2">
-      <h3 id={headingId} className="text-xs font-semibold tracking-wide text-ink-muted uppercase">
-        Visit
-      </h3>
+    <>
+      <section aria-labelledby={headingId} className="space-y-2">
+        <h3 id={headingId} className="text-xs font-semibold tracking-wide text-ink-muted uppercase">
+          Visit
+        </h3>
 
-      {status === 'loading' && (
-        <div aria-busy="true" className="border-t border-line py-3">
-          <div className="h-4 w-2/3 animate-pulse rounded bg-subtle" />
-          <span className="sr-only">Loading visit details</span>
-        </div>
-      )}
+        {status === 'loading' && (
+          <div aria-busy="true" className="border-t border-line py-3">
+            <div className="h-4 w-2/3 animate-pulse rounded bg-subtle" />
+            <span className="sr-only">Loading visit details</span>
+          </div>
+        )}
 
-      {status === 'error' && (
-        <div role="status" className="flex flex-wrap items-center gap-3 border-t border-line py-3">
-          <p className="text-[14px] text-ink-muted">Couldn&apos;t load visit details.</p>
-          <button type="button" onClick={retry} className={ACTION_BUTTON}>
-            Try again
-          </button>
-        </div>
-      )}
+        {status === 'error' && (
+          <div role="status" className="flex flex-wrap items-center gap-3 border-t border-line py-3">
+            <p className="text-[14px] text-ink-muted">Couldn&apos;t load visit details.</p>
+            <button type="button" onClick={retry} className={ACTION_BUTTON}>
+              Try again
+            </button>
+          </div>
+        )}
 
-      {status !== 'loading' && (
-        <dl className="border-t border-line">
-          {!hasKnownAddress && place.address && (
-            <Row icon={ICONS.address} label="Address">
-              {place.address}
-            </Row>
-          )}
-          {split?.known.map((field) => {
-            const source = sources.find((s) => s.id === field.sourceId)
-            return (
-              <Row key={field.key} icon={ICONS[field.key]} label={field.label}>
-                {field.value}
-                <span className="mt-1 block text-[13px] text-ink-muted">
-                  Source: {source?.name ?? field.sourceId} ·{' '}
-                  <time dateTime={field.verifiedAt}>{formatVerifiedDate(field.verifiedAt ?? '')}</time>
-                </span>
+        {status !== 'loading' && (
+          <dl className="border-t border-line">
+            {!hasKnownAddress && place.address && (
+              <Row icon={ICONS.address} label="Address">
+                {place.address}
               </Row>
-            )
-          })}
-        </dl>
-      )}
+            )}
+            {split?.known.map((field) => {
+              const source = sources.find((s) => s.id === field.sourceId)
+              return (
+                <Row key={field.key} icon={ICONS[field.key]} label={field.label}>
+                  {field.value}
+                  <span className="mt-1 block text-[13px] text-ink-muted">
+                    Source: {source?.name ?? field.sourceId} ·{' '}
+                    <time dateTime={field.verifiedAt}>{formatVerifiedDate(field.verifiedAt ?? '')}</time>
+                  </span>
+                </Row>
+              )
+            })}
+          </dl>
+        )}
 
-      {status === 'missing' && (
-        <p className="text-[14px] text-ink-muted">Visit details aren&apos;t available for this place.</p>
-      )}
+        {status === 'missing' && (
+          <p className="text-[14px] text-ink-muted">Visit details aren&apos;t available for this place.</p>
+        )}
 
-      {/* Park visit fields (parking, restrooms, wheelchair...) do not apply to a fire station: only its address shows. */}
-      {split && place.category !== 'fire-station' && (
-        <div className="space-y-1 text-[13px] text-ink-muted">
-          {split.known.length === 0 && <p className="text-[14px] text-ink">No visit details verified yet.</p>}
-          {split.unknown.length > 0 && (
-            <p>Not verified: {split.unknown.map((f) => f.label).join(', ')}</p>
-          )}
-          {split.wheelchairUnknown && <p>Wheelchair access: Not verified</p>}
-        </div>
-      )}
+        {/* Park visit fields (parking, restrooms, wheelchair...) do not apply to a fire station, watershed, creek or library: only the category's own known fields show. */}
+        {split && showsParkVisitFields(place.category) && (
+          <div className="space-y-1 text-[13px] text-ink-muted">
+            {split.known.length === 0 && <p className="text-[14px] text-ink">No visit details verified yet.</p>}
+            {split.unknown.length > 0 && (
+              <p>Not verified: {split.unknown.map((f) => f.label).join(', ')}</p>
+            )}
+            {split.wheelchairUnknown && <p>Wheelchair access: Not verified</p>}
+          </div>
+        )}
 
-      {place.category === 'fire-station' && (
-        <p className="text-[13px] font-medium text-ink">Not for emergencies. In an emergency, call 911.</p>
-      )}
+        {place.category === 'fire-station' && (
+          <p className="text-[13px] font-medium text-ink">Not for emergencies. In an emergency, call 911.</p>
+        )}
 
-      <p className="text-[13px] text-ink-muted">
-        A map pin is not permission to visit. Check the official page for access and hours.
-      </p>
-    </section>
+        <p className="text-[13px] text-ink-muted">
+          A map pin is not permission to visit. Check the official page for access and hours.
+        </p>
+      </section>
+      {references.length > 0 && (
+        <section aria-labelledby={`place-${place.id}-learn-more`} className="space-y-2">
+          <h3 id={`place-${place.id}-learn-more`} className="text-xs font-semibold tracking-wide text-ink-muted uppercase">
+            Learn more
+          </h3>
+          <ul className="space-y-2 text-[14px]">
+            {references.map((r) => (
+              <li key={r.url}>
+                <a href={r.url} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-1 ${TEXT_LINK}`}>
+                  {r.title}
+                  <span className="sr-only"> (opens in a new tab)</span>
+                  <svg {...ICON_PROPS} width={14} height={14}>
+                    <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+                  </svg>
+                </a>
+                <span className="block text-[13px] text-ink-muted">{r.publisher}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </>
   )
 }

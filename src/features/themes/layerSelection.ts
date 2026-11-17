@@ -23,6 +23,7 @@ export const LAYER_IDS: readonly LayerId[] = [
   'art',
   'community',
   'fire-station',
+  'library',
 ]
 
 export const LAYER_LABEL: Record<LayerId, string> = {
@@ -36,6 +37,7 @@ export const LAYER_LABEL: Record<LayerId, string> = {
   art: 'Art',
   community: 'Community',
   'fire-station': 'Community services',
+  library: 'Libraries',
 }
 
 export const LAYER_THEME: Record<LayerId, ThemeId> = {
@@ -49,6 +51,7 @@ export const LAYER_THEME: Record<LayerId, ThemeId> = {
  * - `proposed-trails`: dashed segments of greenways that are not built yet; they would read as walkable trails.
  * - `fire-station`: off by default to keep the first view on places to visit (89 county-wide pins would crowd out parks and art).
  *   It is the "Community services" filter under Art & community; a search for fire stations switches it on.
+ * - `library` is on: libraries are places to visit and there are only ~23 of them county-wide.
  * `park-outlines` is on. The catalog today holds only parks (309), trails (46) and community places (8); history, wildlife,
  * water and art have no places yet and are on so that they show as soon as data arrives.
  */
@@ -57,7 +60,7 @@ export const THEME_DEFAULTS: Record<ThemeId, readonly LayerId[]> = {
   history: ['history'],
   'birds-wildlife': ['wildlife'],
   water: ['water'],
-  'art-community': ['art', 'community'],
+  'art-community': ['art', 'community', 'library'],
 }
 
 const isLayerId = (value: string): value is LayerId => (LAYER_IDS as readonly string[]).includes(value)

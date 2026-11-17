@@ -8,6 +8,8 @@ import { LAYER_IDS, emptyLayersText, resolveLayers, type LayerId } from '../them
 import { CATEGORY_THEME } from '../themes/themes'
 import { TOWNS } from '../towns/coverage'
 import type { CategoryId, Place, ThemeId } from '../../types/place'
+import { useLocationStore } from '../location/locationStore'
+import { MyWatershedPanel } from '../watersheds/MyWatershedPanel'
 import { CoordinatePanel } from './CoordinatePanel'
 import { COORDINATE_ZOOM, formatPoint, parseCoordinates } from './coordinates'
 import { IntentConfirmation, NearPanel, type NearIntent } from './IntentPanels'
@@ -52,6 +54,7 @@ export function SearchBox() {
   const intentText = intent ? intentLabel(intent, TOWNS, placesById) : null
   const [applied, setApplied] = useState<AppliedTown | null>(null)
   const [near, setNear] = useState<NearIntent | null>(null)
+  const [asksWatershed, setAsksWatershed] = useState(false)
   // Same selection as the map and list: hidden layers are not searched, but named when they hold the matches.
   const { results, hiddenLayers } = useLayerSearch(query, MAX_RESULTS, true)
 
@@ -79,6 +82,16 @@ export function SearchBox() {
     const label = intentText
     setSearchQuery('')
     setOpen(false)
+    if (it.kind === 'my-watershed') {
+      setApplied(null)
+      setNear(null)
+      setAsksWatershed(true)
+      // The same permission prompt as the Near me button; a location already shared is reused.
+      const loc = useLocationStore.getState()
+      if (loc.status !== 'on' && loc.status !== 'requesting') loc.request()
+      return
+    }
+    setAsksWatershed(false)
     if (it.kind === 'category-near-place') {
       setApplied(null)
       setNear({ placeId: it.placeId, categoryIds: it.categoryIds })
@@ -117,6 +130,7 @@ export function SearchBox() {
     setOpen(false)
     setNear(null)
     setView('map')
+    setAsksWatershed(false)
   }
 
   function goToPoint(p: { lat: number; lon: number }) {
@@ -125,8 +139,8 @@ export function SearchBox() {
     setOpen(false)
     setNear(null)
     setApplied(null)
-    state.setDroppedPin(p)
-    state.requestCamera([p.lon, p.lat], COORDINATE_ZOOM)
+    setAsksWatershed(false)
+    state.showPoint(p, true, COORDINATE_ZOOM)
     setView('map')
   }
 
@@ -279,6 +293,7 @@ export function SearchBox() {
       </div>
       </div>
       <CoordinatePanel onPick={pickPlace} />
+      {asksWatershed && <MyWatershedPanel onClose={() => setAsksWatershed(false)} />}
       {applied && town === applied.town && <IntentConfirmation text={applied.text} onUndo={undoTown} />}
     </div>
   )
